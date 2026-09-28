@@ -6,6 +6,12 @@
 IMU_data_t IMU_data;
 int64_t IMU_data_time=0;
 
+/**
+ * @brief 外置 DM-IMU 数据采集任务。
+ *
+ * 注册 CAN3 上的 IMU、维护统一的 IMU_data 姿态/角速度快照，并交替请求
+ * 高速陀螺仪与低频欧拉角数据以兼顾实时性和绝对角度校正。
+ */
 void IMU_Task(void *argument)
 {
     uint8_t euler_request_div = 0U;

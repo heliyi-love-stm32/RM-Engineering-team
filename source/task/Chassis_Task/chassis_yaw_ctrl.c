@@ -1,3 +1,11 @@
+/**
+ * @file chassis_yaw_ctrl.c
+ * @brief IMU-feedback yaw target generation and cascaded yaw control.
+ *
+ * DBUS or mouse input changes a persistent target angle.  A position PID
+ * produces a target angular velocity and a speed PID produces the chassis
+ * rotational command.  IMU validity is checked before closed-loop output.
+ */
 #include "chassis_yaw_ctrl.h"
 
 #include "DBusSys.h"
@@ -9,6 +17,8 @@
 
 #include <math.h>
 
+/* Complementary fusion tuning: integrate gyro rate while correcting gyro drift
+ * toward the absolute Euler yaw measurement. */
 #define CHASSIS_YAW_EULER_CORRECTION_GAIN 0.35f
 #define CHASSIS_YAW_EULER_HARD_SYNC_THRESHOLD 0.35f
 #define CHASSIS_YAW_EULER_CORRECTION_STEP_MAX 0.04f
@@ -22,6 +32,7 @@
 #define CHASSIS_YAW_REST_EXIT_SPEED_WINDOW 0.30f
 #define CHASSIS_YAW_SPEED_FILTER_TC_S 0.026f
 
+/** Persistent estimator, target, and PID state for the cascaded yaw loop. */
 static pid_type_def s_chassis_yaw_pos_pid;
 static pid_type_def s_chassis_yaw_spd_pid;
 static float32_t s_chassis_target_yaw_angle = 0.0f;
@@ -100,6 +111,7 @@ static float32_t Chassis_YawCtrl_FuseAbsoluteAngle(float32_t estimated_angle,
 {
     float32_t correction = absolute_angle - estimated_angle;
 
+    /* A large discrepancy is a reset/discontinuity: synchronize immediately. */
     if (fabsf(correction) > CHASSIS_YAW_EULER_HARD_SYNC_THRESHOLD) {
         return absolute_angle;
     }

@@ -33,6 +33,11 @@ void DBus_Init(void)
  * @brief  DBusSys刷新函数
  * 
  * */
+/**
+ * @brief 在收到新 DMA/中断数据后解码 DR16/DT7 遥控器帧。
+ *
+ * 未出现新帧时保持上一次有效控制量，避免重复解析缓冲区。
+ */
 void DBus_Refresh(void)
 {
   // 如果uart5_msg的count与上一次的Lsat_Conut不相等，说明有新数据接收
@@ -49,6 +54,10 @@ void DBus_Refresh(void)
  * @brief  解析DBus_msg的接收缓冲区数据，更新遥控器数据
  * 
  * */
+/**
+ * @brief 将 18 字节 DBUS 帧解包为通道、开关、鼠标和键盘状态。
+ * @note 对摇杆中心死区和越界数据进行保护处理。
+ */
 void get_dr16_data(rc_info_t *rc, uint8_t buff[])
 {
   // satori：这里完成的是数据的分离和拼接，减去1024是为了让数据的中间值变为0

@@ -1,3 +1,11 @@
+/**
+ * @file chassis_drive.c
+ * @brief Four-wheel chassis kinematics, wheel PID, and power allocation.
+ *
+ * The module converts DBUS/keyboard motion into wheel targets, performs
+ * feedback control, estimates available power, and publishes CAN outputs.
+ * It deliberately separates target calculation from physical output sending.
+ */
 #include "chassis_drive.h"
 #include "Chassis_Task.h"
 #include "PowerControl.h"
@@ -11,6 +19,7 @@
 #include <math.h>
 #include <string.h>
 
+/** Module-owned motor/PID/output storage.  All four-element arrays use one wheel order. */
 static DJI_motor_t s_chassis_motor_obj;
 static DJI_motor_t *s_chassis_motor = &s_chassis_motor_obj;
 
@@ -32,6 +41,7 @@ static float32_t s_rising_power_output_slew_state[2] = {0};
 static uint8_t s_chassis_front_wheels_output_bypass = 0U;
 static basic_vector_t s_chassis_keyboard_motion_filtered = {0};
 
+/** Power path: collect referee inputs, allocate a budget, then slew limited outputs. */
 static void Chassis_PowerAssignHook(float alloc_power);
 static void Chassis_PowerControl_Init(void);
 static void Chassis_PowerControl_UpdateInputs(void);
@@ -43,10 +53,12 @@ static uint8_t Chassis_IsRearWheelIndex(int index);
 static uint8_t Chassis_ShouldBypassWheelOutput(int index);
 static void Chassis_ApplyWheelOutputBypass(void);
 static uint8_t Chassis_IsPowerCalcGroupEnabled(uint8_t group);
+/** Shape translation commands with separate acceleration and braking limits. */
 static float32_t Chassis_ApplyAxisSlewRate(float32_t current_value,
                                            float32_t target_value,
                                            float32_t accel_limit,
                                            float32_t decel_limit);
+/** Map input to yaw rate; the soft version removes the deadzone discontinuity. */
 static float32_t Chassis_MapInputToOpenLoopWz(float32_t input_value,
                                               float32_t deadzone,
                                               float32_t input_limit,
@@ -57,6 +69,7 @@ static float32_t Chassis_MapInputToOpenLoopWzSoftDeadzone(float32_t input_value,
                                                           float32_t input_limit,
                                                           float32_t polarity,
                                                           float32_t max_wz);
+/** Keyboard helpers keep direction changes and key release smooth. */
 static void Chassis_ApplyLateralForwardCompensation(basic_vector_t *motion);
 static float32_t Chassis_GetKeyboardYawRateScale(const keyboard_t *kb);
 static void Chassis_ResetKeyboardMotionFilter(void);
@@ -84,6 +97,7 @@ static float32_t Chassis_ApplyAxisSlewRate(float32_t current_value,
         return target_value;
     }
 
+    /* A sign reversal decelerates through zero rather than reversing abruptly. */
     if ((target_value * current_value < 0.0f) ||
         (fabsf(target_value) < fabsf(current_value))) {
         max_delta = decel_limit * Chassis_Task_Loop_Period_S;
@@ -138,6 +152,7 @@ static float Chassis_ApplyPowerScaleFilter(float current_scale,
                                            float attack,
                                            float release)
 {
+    /* Fast limiting protects the budget; gradual recovery prevents oscillation. */
     if (target_scale < current_scale) {
         current_scale += attack * (target_scale - current_scale);
     } else {
@@ -848,6 +863,10 @@ void Chassis_Stop(void)
     }
 }
 
+/**
+ * @brief 临时旁路前轮输出，用于抬升等需要锁止部分轮组的动作序列。
+ * @param enable 非零时将前轮控制量清零；零时恢复正常输出。
+ */
 void Chassis_SetFrontWheelsOutputBypass(uint8_t enable)
 {
     s_chassis_front_wheels_output_bypass = (enable != 0U) ? 1U : 0U;

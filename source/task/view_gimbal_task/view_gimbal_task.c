@@ -73,6 +73,11 @@ static inline void keysetZero(void) {
     set_Init_Pos(&view_gimbal_yaw, init_pos[0]);
   }
 }
+/**
+ * @brief 视角云台舵机任务。
+ *
+ * 将键盘动作映射为俯仰/偏航位置增量，限制行程后以 100 Hz 刷新 PWM 输出。
+ */
 void View_Gimbal_Task(void *argument){
 
   UNUSED(argument);

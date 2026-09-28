@@ -1,3 +1,12 @@
+/**
+ * @file Chassis_Task.c
+ * @brief Top-level chassis coordinator and sequence state machines.
+ *
+ * Execution order per 2 ms cycle: obtain the selected input source, derive
+ * the safety/mode state, advance timed state machines, reset controllers on
+ * transitions, then issue chassis and rising commands.  Timed states use
+ * unsigned tick subtraction so an RTOS tick counter wrap remains safe.
+ */
 #include "Chassis_Task.h"
 
 #include "Referee_Task.h"
@@ -10,8 +19,10 @@
 #include <math.h>
 #include <stdint.h>
 
+/** Shared decoded DBUS input, maintained by the remote-control module. */
 extern rc_info_t remoter;
 
+/** Public snapshots for telemetry and other tasks; only this module owns updates. */
 volatile Chassis_Mode_State_t g_chassis_mode_state = CHASSIS_MODE_STATE_Normal;
 volatile Chassis_Control_Source_State_t g_chassis_control_source_state = CHASSIS_CONTROL_SOURCE_STATE_DBUS;
 volatile Chassis_Rising_Behavior_State_t g_chassis_rising_behavior_state =
@@ -19,6 +30,7 @@ volatile Chassis_Rising_Behavior_State_t g_chassis_rising_behavior_state =
 volatile Chassis_Keyboard_Direction_State_t g_chassis_keyboard_direction_state =
     CHASSIS_KEYBOARD_DIRECTION_STATE_Front;
 
+/** One-cycle-safe request latches and previous samples used for rising-edge detection. */
 static volatile uint8_t s_chassis_force_poweroff = 0U;
 static volatile uint8_t s_chassis_rising_start_request = 0U;
 static volatile uint8_t s_chassis_keyboard_reverse_request = 0U;
@@ -29,6 +41,7 @@ static uint8_t s_chassis_dbus_left_middle_right_front_prev_active = 0U;
 
 typedef enum
 {
+    /** No timed rising sequence is active; use regular rising behaviour. */
     CHASSIS_RISING_RUNTIME_STATE_IDLE = 0,
     CHASSIS_RISING_RUNTIME_STATE_LIFTING,
     CHASSIS_RISING_RUNTIME_STATE_TRANSITION,
@@ -55,6 +68,7 @@ typedef enum
 
 typedef struct
 {
+    /** Current stage and tick at which that stage was entered. */
     Chassis_Rising_Runtime_State_t state;
     uint32_t state_start_tick;
 } Chassis_Rising_Runtime_Ctx_t;
@@ -71,11 +85,19 @@ typedef struct
     uint32_t state_start_tick;
 } Chassis_Keyboard_AutoNormal_Runtime_Ctx_t;
 
+/* Private helpers are grouped by responsibility: input arbitration, edge
+ * detection, timed-state updates, then output dispatch. */
+/** Resolve the safety override before any source-specific mode interpretation. */
 static uint8_t Chassis_IsPowerOffRequested(void);
+/** Read the authoritative Engineer_Mode source selector. */
 static Chassis_Control_Source_State_t Chassis_GetControlSourceState(void);
+/** Map the selected source's inputs into the one public chassis mode. */
 static Chassis_Mode_State_t Chassis_GetRequestedModeState(void);
+/** Publish the resolved mode and mirror the DBUS-compatible engineer mode. */
 static void Chassis_SyncModeStateFromSource(void);
+/** Recover from an invalid externally-written rising behaviour enum value. */
 static void Chassis_SanitizeRisingBehaviorState(void);
+/** DBUS switch predicates; each returns 1 only while DBUS owns control. */
 static uint8_t Chassis_IsDbusLeftFront(void);
 static uint8_t Chassis_IsDbusLeftMiddleRightFront(void);
 static uint8_t Chassis_IsDbusLeftDown(void);
@@ -83,7 +105,9 @@ static Chassis_Rising_Behavior_State_t Chassis_GetActiveRisingBehaviorState(void
 static uint8_t Chassis_TakeDbusRisingFrontEdge(void);
 static uint8_t Chassis_TakeDbusLeftMiddleRightFrontEdge(void);
 static uint8_t Chassis_TakeDbusCh4ReverseEdge(void);
+/** Convert a configuration duration from milliseconds to RTOS ticks. */
 static uint32_t Chassis_MsToTicks(uint32_t duration_ms);
+/** Reset only runtime state; the paired reset additionally clears its request latch. */
 static void Chassis_ResetRisingRuntimeCtxOnly(Chassis_Rising_Runtime_Ctx_t *ctx);
 static void Chassis_ResetRisingRuntime(Chassis_Rising_Runtime_Ctx_t *ctx);
 static void Chassis_UpdateRisingRuntime(Chassis_Rising_Runtime_Ctx_t *ctx);
@@ -93,7 +117,9 @@ static void Chassis_ResetKeyboardReverseRuntime(Chassis_Keyboard_Reverse_Runtime
 static void Chassis_UpdateKeyboardReverseRuntime(Chassis_Keyboard_Reverse_Runtime_Ctx_t *ctx);
 static void Chassis_ResetKeyboardAutoNormalRuntimeCtxOnly(Chassis_Keyboard_AutoNormal_Runtime_Ctx_t *ctx);
 static void Chassis_ResetKeyboardAutoNormalRuntime(Chassis_Keyboard_AutoNormal_Runtime_Ctx_t *ctx);
+/** Advance the timed state machines once, without issuing motor commands. */
 static void Chassis_UpdateKeyboardAutoNormalRuntime(Chassis_Keyboard_AutoNormal_Runtime_Ctx_t *ctx);
+/** Output dispatchers: translate a resolved mode/state into rising and drive calls. */
 static void Chassis_ExecuteNormalBySource(const keyboard_t *active_kb);
 static void Chassis_ExecuteKeyboardAutoNormalBySource(
     const keyboard_t *active_kb,
@@ -510,6 +536,8 @@ static void Chassis_UpdateRisingRuntime(Chassis_Rising_Runtime_Ctx_t *ctx)
         }
     }
 
+    /* Each stage is time-based.  Unsigned subtraction remains correct across
+     * tick-counter wrap while every configured stage is much shorter than it. */
     switch (ctx->state) {
         case CHASSIS_RISING_RUNTIME_STATE_LIFTING:
             if ((uint32_t)(now - ctx->state_start_tick) >=
@@ -587,6 +615,7 @@ static void Chassis_UpdateKeyboardReverseRuntime(Chassis_Keyboard_Reverse_Runtim
         return;
     }
 
+    /* Consume only while idle/finished, so repeated samples cannot extend a sequence. */
     if (((s_chassis_keyboard_reverse_request != 0U) || (dbus_ch4_reverse_edge != 0U)) &&
         ((ctx->state == CHASSIS_KEYBOARD_REVERSE_RUNTIME_STATE_IDLE) ||
          (ctx->state == CHASSIS_KEYBOARD_REVERSE_RUNTIME_STATE_FINISHED))) {
@@ -628,6 +657,7 @@ static void Chassis_UpdateKeyboardAutoNormalRuntime(Chassis_Keyboard_AutoNormal_
         s_chassis_keyboard_auto_normal_request = 0U;
     }
 
+    /* Missing motor handles are not-ready: wait rather than issuing a drive command. */
     if ((dm_l != NULL) && (dm_r != NULL)) {
         dm_ready = ((fabsf(dm_l->motor_msg.motor_angle) < CHASSIS_KEYBOARD_AUTO_NORMAL_DM_ANGLE_THRESHOLD) &&
                     (fabsf(dm_r->motor_msg.motor_angle) < CHASSIS_KEYBOARD_AUTO_NORMAL_DM_ANGLE_THRESHOLD))
@@ -1053,6 +1083,13 @@ static void Chassis_ExecuteDbusLeftMiddleRightFrontStateMachine(const keyboard_t
     }
 }
 
+/**
+ * @brief 底盘控制主任务。
+ *
+ * 初始化轮系与抬升机构；随后以固定周期同步控制源、更新抬升/倒车
+ * 状态机，并按当前模式下发底盘和抬升电机指令。
+ * @param argument FreeRTOS 任务参数，未使用。
+ */
 void Chassis_Task(void *argument)
 {
     Chassis_Rising_Runtime_Ctx_t rising_runtime;
@@ -1110,6 +1147,7 @@ void Chassis_Task(void *argument)
         Chassis_UpdateKeyboardReverseRuntime(&keyboard_reverse_runtime);
         Chassis_UpdateKeyboardAutoNormalRuntime(&keyboard_auto_normal_runtime);
 
+        /* Re-anchor feedback state once per transition to avoid a controller kick. */
         if ((g_chassis_mode_state != last_mode_state) ||
             (effective_rising_runtime_state != last_rising_runtime_state) ||
             (keyboard_reverse_runtime.state != last_keyboard_reverse_runtime_state) ||

@@ -33,6 +33,7 @@
 // #include "usart.h"
 // #include "PIDtool.h"
 #include "auto_get_timer_init.h"
+#include "arm_debug.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,6 +54,19 @@ typedef StaticSemaphore_t osStaticSemaphoreDef_t;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+/*
+ * FreeRTOS 任务总览
+ * ----------------
+ * 本文件是调度器入口，不实现具体机器人业务；各任务实现在 source/task/ 下。
+ *
+ * 推荐阅读顺序：
+ *   1. 从 MX_FREERTOS_Init() 了解对象创建与任务注册。
+ *   2. 跟踪每个 osThreadNew() 的任务入口函数。
+ *   3. 再跟踪任务对 source/module/ 与 source/bsp/ 的调用。
+ *
+ * 下方任务均采用静态分配的控制块和栈空间；新增或调整任务栈时，需同步维护
+ * Buffer、ControlBlock 和 attributes 三部分定义。
+ */
 /* USER CODE BEGIN Variables */
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -63,6 +77,7 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for IMU_TempCtrl */
+/* 板载 IMU 温控 / 姿态更新任务。 */
 osThreadId_t IMU_TempCtrlHandle;
 uint32_t IMU_TempCtrlBuffer[ 128 ];
 osStaticThreadDef_t IMU_TempCtrlControlBlock;
@@ -75,6 +90,7 @@ const osThreadAttr_t IMU_TempCtrl_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for Remoter */
+/* 遥控器接收任务：向其他任务发布 DBUS 输入数据。 */
 osThreadId_t RemoterHandle;
 uint32_t RemoterBuffer[ 256 ];
 osStaticThreadDef_t RemoterControlBlock;
@@ -140,6 +156,7 @@ const osThreadAttr_t jointFollowAngle_attributes = {
 };
 
  /* Definitions for Arm_State_Machine_Task */
+ /* 可选的机械臂状态机任务定义；当前未在下方注册运行。 */
  osThreadId_t Arm_State_Machine_TaskHandle;
  uint32_t Arm_State_Machine_TaskBuffer[512];
  osStaticThreadDef_t Arm_State_Machine_TaskControlBlock;
@@ -164,6 +181,7 @@ const osThreadAttr_t jointFollowAngle_attributes = {
      .priority = (osPriority_t) osPriorityNormal,
  };
 uint32_t Chassis_TaskBuffer[512];  // 栈大小：128 * 4字节 = 512字节
+/* 底盘主控制循环：模式选择、行驶及抬升逻辑。 */
 osStaticThreadDef_t Chassis_TaskControlBlock;  // 静态任务控制块
 osThreadId_t Chassis_TaskHandle;  // 任务句柄
 const osThreadAttr_t Chassis_Task_attributes = {
@@ -176,6 +194,7 @@ const osThreadAttr_t Chassis_Task_attributes = {
 };
 
 uint32_t Referee_TaskBuffer[1024];  // 栈大小：1024 * 4字节 = 4096字节
+/* 裁判系统 / 自定义控制器数据处理任务。 */
 osStaticThreadDef_t Referee_TaskControlBlock;  // 静态任务控制块
 osThreadId_t Referee_TaskHandle;  // 任务句柄
 const osThreadAttr_t Referee_Task_attributes = {
@@ -188,6 +207,7 @@ const osThreadAttr_t Referee_Task_attributes = {
 };
 
 uint32_t Watchdog_TaskBuffer[512];
+/* 健康监测任务：电机、遥控器超时检测及告警。 */
 osStaticThreadDef_t Watchdog_TaskControlBlock;
 osThreadId_t Watchdog_TaskHandle;
 const osThreadAttr_t Watchdog_Task_attributes = {
@@ -200,6 +220,7 @@ const osThreadAttr_t Watchdog_Task_attributes = {
 };
 
 uint32_t IMU_TaskBuffer[512];
+/* 外置 IMU 通信及姿态数据更新任务。 */
 osStaticThreadDef_t IMU_TaskControlBlock;
 osThreadId_t IMU_TaskHandle;
 const osThreadAttr_t IMU_Task_attributes = {
@@ -339,6 +360,7 @@ const osSemaphoreAttr_t controlBinaryIMU_attributes = {
  };
 
  /* Definitions for View_Gimbal_Task */
+ /* 视觉云台 / 舵机控制任务。 */
  osThreadId_t View_Gimbal_TaskHandle;
  uint32_t View_Gimbal_TaskBuffer[128];
  osStaticThreadDef_t View_Gimbal_TaskControlBlock;
@@ -375,6 +397,7 @@ const osSemaphoreAttr_t controlBinaryIMU_attributes = {
      .priority = (osPriority_t) osPriorityNormal,
  };
  /* Definitions for auto_get_task */
+ /* 自动取矿轨迹 / 控制任务。 */
  osThreadId_t auto_get_taskHandle;
  uint32_t auto_get_taskBuffer[128];
  osStaticThreadDef_t auto_get_taskControlBlock;
@@ -387,6 +410,7 @@ const osSemaphoreAttr_t controlBinaryIMU_attributes = {
      .priority = (osPriority_t) osPriorityNormal,
  };
  /* Definitions for Arm_Reset */
+ /* 机械臂回零 / 复位任务。 */
  osThreadId_t Arm_ResetHandle;
  uint32_t Arm_ResetBuffer[1024];
  osStaticThreadDef_t Arm_ResetControlBlock;
@@ -440,7 +464,12 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   * @retval None
   */
 void MX_FREERTOS_Init(void) {
+  /*
+   * 本函数在 osKernelStart() 前仅执行一次。
+   * 依赖 RTOS 对象的初始化放在这里，周期性控制逻辑放在对应任务中。
+   */
   /* USER CODE BEGIN Init */
+  /* 初始化自动轨迹子系统使用的定时器。 */
   traj_timer_init();
   /* USER CODE END Init */
 
@@ -450,9 +479,11 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the semaphores(s) */
   /* creation of imuBinarySem01 */
+  /* IMU 相关生产者 / 消费者同步用的事件型信号量。 */
   imuBinarySem01Handle = osSemaphoreNew(1, 0, &imuBinarySem01_attributes);
 
   /* creation of controlBinaryIMU */
+  /* 协调 IMU 控制与数据处理的信号量。 */
   controlBinaryIMUHandle = osSemaphoreNew(1, 0, &controlBinaryIMU_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -468,7 +499,12 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
+  /*
+   * 当前启用的任务集合。
+   * 被注释的 osThreadNew() 是可选测试或调试任务，不会在当前固件中创建线程。
+   */
   /* creation of defaultTask */
+  /* 空闲占位任务；必须主动让出 CPU，保证控制任务正常运行。 */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of IMU_TempCtrl */
@@ -480,8 +516,10 @@ void MX_FREERTOS_Init(void) {
   
   // uartTestHandle = osThreadNew(uart_test, NULL, &uartTest_attributes);
   // motorTestHandle = osThreadNew(motor_test, NULL,&motorTest_attributes);
+  /* 六轴机械臂关节跟随与末端执行器控制循环。 */
   jointFollowAngleHandle = osThreadNew(jointFollowAngle,NULL, &jointFollowAngle_attributes);
   // debug_msgHandle = osThreadNew(debug_msg_task, NULL, &debug_msg_attributes);
+  /* 自动取矿行为任务。 */
   auto_get_taskHandle = osThreadNew(auto_get_task, NULL, &auto_get_task_attributes);
   // vofaHandle = osThreadNew(vofa_send, NULL, &vofa_attributes);
   // Joint1_Move_TaskHandle = osThreadNew(Joint1_Move_Task, NULL, &Joint1_Move_Task_attributes);
@@ -491,18 +529,26 @@ void MX_FREERTOS_Init(void) {
   // Joint5_Move_TaskHandle = osThreadNew(Joint5_Move_Task, NULL, &Joint5_Move_Task_attributes);
   // Joint6_Move_TaskHandle = osThreadNew(Joint6_Move_Task, NULL, &Joint6_Move_Task_attributes);
   //uart_Transmit_AngleHandle = osThreadNew(uart_Transmit_Angle, NULL, &uart_Transmit_Angle_attributes);
+  /* 底盘驱动、模式切换与抬升状态机。 */
   Chassis_TaskHandle = osThreadNew(Chassis_Task, NULL, &Chassis_Task_attributes);
   // SerialPortHandle = osThreadNew(SerialPlot, NULL, &SerialPort_attributes);
+  /* 自定义控制器 / 裁判系统输入处理。 */
   Referee_TaskHandle = osThreadNew(Referee_Task, NULL, &Referee_Task_attributes);
+  /* 获取并发布外置 IMU 数据。 */
   IMU_TaskHandle = osThreadNew(IMU_Task, NULL, &IMU_Task_attributes);
   // Trajectory_PublisherHandle = osThreadNew(Trajectory_Publisher_Task, NULL, &Trajectory_Publisher_attributes);
+  /* 视觉云台舵机控制循环。 */
   View_Gimbal_TaskHandle = osThreadNew(View_Gimbal_Task, NULL, &View_Gimbal_Task_attributes);
 
+  /* 机械臂复位 / 回零流程。 */
+#if !DEBUG_READ_DATA_ONLY
   Arm_ResetHandle = osThreadNew(arm_reset_task, NULL, &Arm_Reset_attributes);
+#endif
 
   // SerialPlotHandle = osThreadNew(SerialPlot, NULL, &SerialPlot_attributes);
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  /* 最后启动看门狗，使其监测前面已创建的任务和设备。 */
   Watchdog_TaskHandle = osThreadNew(Watchdog_Task, NULL, &Watchdog_Task_attributes);
   /* USER CODE END RTOS_THREADS */
 
@@ -540,6 +586,7 @@ void StartDefaultTask(void *argument)
 /* USER CODE END Header_IMU_TempCtrlTask */
 __weak void IMU_TempCtrlTask(void *argument)
 {
+  /* 弱符号兜底实现会被 source/task/ 中的同名强符号实现替换。 */
   /* USER CODE BEGIN IMU_TempCtrlTask */
   UNUSED(argument);
   /* Infinite loop */
@@ -559,6 +606,7 @@ __weak void IMU_TempCtrlTask(void *argument)
 /* USER CODE END Header_Remoter_Task */
 __weak void Remoter_Task(void *argument)
 {
+  /* 仅在未链接真实 Remoter_Task 实现时使用此兜底函数。 */
   /* USER CODE BEGIN Remoter_Task */
   UNUSED(argument);
   /* Infinite loop */
@@ -571,6 +619,12 @@ __weak void Remoter_Task(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+
+/*
+ * 下方弱符号函数是 CubeMX 生成的链接期兜底实现。
+ * 若 source/task/ 中存在同名真实实现，会优先链接真实实现。
+ * 不应在这里编写正式业务逻辑，否则可能被同名强符号静默覆盖。
+ */
 
 __weak void uart_test(void *argument)
 {

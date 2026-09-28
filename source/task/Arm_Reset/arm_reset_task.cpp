@@ -25,6 +25,17 @@ void Arm_Reset(Joint_t* Joint)
     if (Arm_Current_Control_Mode == ARM_RESET_ZERO_MODE) {
         return;
     }
+
+#if DEBUG_JOINT1_ONLY
+  /* 单关节调试时，后台复位任务不得自动使能其他关节 */
+  for (int joint_index = 1; joint_index < JOINT_NUM; joint_index++) {
+    Motor_DM_Disable(Joint[joint_index].joint_motor);
+  }
+  Motor_DM_Disable(EndEffector.endEffector_motor);
+  Motor_DM_Enable(Joint[0].joint_motor);
+  return;
+#endif
+
   /* 使用控制器更新失能电机数量 */
   uint8_t disabled_count = reset_ctrl.update_disabled_count(Joint);
   if ( disabled_count == 6 ) {
@@ -47,6 +58,11 @@ void Arm_Reset(Joint_t* Joint)
 extern "C" void ARM_FULL_RESET_HANDLE(void){
     
 }
+/**
+ * @brief 机械臂零位恢复后台任务。
+ *
+ * 等待关节对象完成初始化后，周期检查失能关节并执行复位/重新使能策略。
+ */
 extern "C" void arm_reset_task(void *argument)
 {
     UNUSED(argument);

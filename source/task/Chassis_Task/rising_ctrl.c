@@ -1,3 +1,11 @@
+/**
+ * @file rising_ctrl.c
+ * @brief Controls the rising mechanism's 3508 drive and paired DM joints.
+ *
+ * Mode functions select a calibrated DM profile, move targets with bounded
+ * slew rate, and publish motor commands.  Normal/hold paths retain posture;
+ * rising and DBUS-down paths use their own limits and feed-forward settings.
+ */
 #include "rising_ctrl.h"
 #include "PIDtool.h"
 #include "arm_math_types.h"
@@ -8,6 +16,8 @@
 #include "../IMU_Task/IMU_Task.h"
 #include <string.h>
 
+/** DM pipeline: posture target -> optional IMU correction -> position/speed PID
+ * -> torque plus feed-forward.  Profiles isolate posture calibrations. */
 static void Rising_DmImuPid_Init(pid_type_def pid[]);
 static void Rising_DmImuPid_LoadProfile(pid_type_def *pid, Rising_Dm_Mode_Profile_t profile);
 static void Rising_DmImuAngleClosedLoop(IMU_data_t imu,
@@ -41,6 +51,7 @@ static void Rising_DmCalcTorqueCommand(DM_motor_t *motor,
                                        float32_t *torque_cmd,
                                        float32_t *debug_output);
 
+/** Module-owned motor objects, output buffers, and persistent controller state. */
 static DJI_motor_t s_rising_dji_obj;
 static DJI_motor_t *s_rising_dji = &s_rising_dji_obj;
 
@@ -165,6 +176,11 @@ void Rising_Normal_Mode(const rc_info_t *remoter)
     }
 }
 
+/**
+ * @brief 执行遥控器触发的下楼姿态。
+ *
+ * 保持抬升 3508 停止，并将左右 DM 电机收敛到下楼预设角度。
+ */
 void Rising_DbusDown_Mode(void)
 {
     if (s_rising_dji == NULL || s_rising_dm_l == NULL || s_rising_dm_r == NULL) {
@@ -188,6 +204,9 @@ void Rising_DbusDown_Mode(void)
     g_chassis_debug.rising_actual_angle_dm_r = s_rising_dm_r->motor_msg.motor_angle;
 }
 
+/**
+ * @brief 在普通模式保持抬升机构当前位置和安全姿态。
+ */
 void Rising_Normal_Hold_Mode(void)
 {
     if (s_rising_dji == NULL || s_rising_dm_l == NULL || s_rising_dm_r == NULL) {

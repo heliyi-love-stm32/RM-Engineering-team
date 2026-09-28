@@ -95,6 +95,7 @@ static void server_rx_callback(uint8_t *pData, uint32_t size)
 	}
 }
 
+/** @brief 查询裁判系统 UART 接收链路是否已成功注册。 */
 uint8_t referee_is_inited(void)
 {
 	return (((server_recieve_data.rx_msg != NULL) &&
@@ -376,6 +377,10 @@ static void ctrller_rx_callback(uint8_t *pData, uint32_t size)
 /** 
  * @brief 初始化控制器模块的UART接收配置
  * @param huart 指向UART句柄的指针
+ */
+/**
+ * @brief 初始化自定义控制器 UART、环形缓冲区与接收回调。
+ * @param huart 承载控制器协议的 UART 外设。
  */
 void ctrller_init(UART_HandleTypeDef *huart)
 {

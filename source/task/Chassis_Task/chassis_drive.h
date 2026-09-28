@@ -1,6 +1,15 @@
 #ifndef CHASSIS_DRIVE_H
 #define CHASSIS_DRIVE_H
 
+/**
+ * @file chassis_drive.h
+ * @brief Public interfaces for planar chassis motion and four-wheel actuation.
+ *
+ * Call a mode function once per chassis-task period after initialization.  A
+ * non-null DBUS or keyboard pointer supplies the current operator command;
+ * preset-motion functions provide autonomous translation while retaining yaw.
+ */
+
 #include "chassis_config.h"
 
 #include <stdint.h>
@@ -73,6 +82,7 @@ void Chassis_Keyboard_PresetMotion_OpenLoopYaw(const keyboard_t *kb,
                                                float32_t motion_y,
                                                uint8_t enable_yaw);
 
+/** @brief Drive a preset translation while keeping IMU yaw closed-loop enabled. */
 void Chassis_Keyboard_PresetMotion_ClosedLoopYaw(const keyboard_t *kb,
                                                  float32_t motion_x,
                                                  float32_t motion_y,

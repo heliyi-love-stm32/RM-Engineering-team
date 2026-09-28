@@ -352,6 +352,12 @@ static void Watchdog_AlarmUpdate(Watchdog_State_t *st, uint32_t now_ms, uint8_t 
     }
 }
 
+/**
+ * @brief 通信与执行器安全监控任务。
+ *
+ * 周期检查 DJI/DM 电机和遥控器在线状态；故障时强制底盘断电、告警，
+ * 并对可恢复的 DM 电机执行自动使能。
+ */
 void Watchdog_Task(void *argument)
 {
     (void)argument;

@@ -1,3 +1,10 @@
+/**
+ * @file chassis_debug.c
+ * @brief Defines the single chassis diagnostic snapshot.
+ *
+ * Control code refreshes individual members for a debugger, telemetry, or
+ * recorder.  Values are diagnostic only and must not be used as control input.
+ */
 #include "chassis_debug.h"
 #include "chassis_config.h"
 

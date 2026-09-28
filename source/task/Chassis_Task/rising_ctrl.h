@@ -1,6 +1,15 @@
 #ifndef RISING_CTRL_H
 #define RISING_CTRL_H
 
+/**
+ * @file rising_ctrl.h
+ * @brief Public control and diagnostic-access interface for the rising mechanism.
+ *
+ * The mechanism contains a 3508 drive and mirrored left/right DM joints.
+ * Call the selected mode every chassis cycle; do not mix conflicting mode
+ * functions in one cycle because each one owns the motor target profile.
+ */
+
 #include "chassis_config.h"
 #include <stdint.h>
 #include "DBusSys.h"
@@ -18,6 +27,7 @@
 
 typedef enum
 {
+    /** Normal/hold feed-forward and PID coefficients. */
     RISING_DM_CONTROL_PROFILE_Normal = 0,
     RISING_DM_CONTROL_PROFILE_Rising = 1,
 } Rising_Dm_Control_Profile_t;
@@ -46,6 +56,7 @@ void Rising_Stop(void);
  * @param remoter 遥控器数据指针
  */
 void Rising_Normal_Mode(const rc_info_t *remoter);
+/** @brief Move the mechanism to the DBUS-down posture/profile. */
 void Rising_DbusDown_Mode(void);
 
 /**
@@ -55,6 +66,7 @@ void Rising_DbusDown_Mode(void);
  * 同时让DM电机保持在Normal模式的目标角度，直到下一次重新进入Rising模式。
  */
 void Rising_Normal_Hold_Mode(void);
+/** @brief Hold the DBUS-down posture without changing the 3508 target. */
 void Rising_DbusDown_Normal_Hold_Mode(void);
 
 /**
@@ -127,13 +139,19 @@ void Rising_Motor_SendControl_DM(DM_motor_t *DMMotor_L,
                                  float32_t output_R,
                                  Rising_Dm_Control_Profile_t profile);
 
+/** @brief Clear DM IMU outer-loop memory after a chassis state transition. */
 void Rising_Reset_DmImuPid(void);
 
+/** @brief Return the managed 3508 motor handle; may be null before initialization. */
 DJI_motor_t *Rising_Get3508Motor(void);
+/** @brief Return the two-element 3508 output buffer owned by this module. */
 int16_t *Rising_Get3508CtrlOutput(void);
+/** @brief Publish the currently prepared 3508 output buffer over CAN. */
 void Rising_Publish3508Output(void);
 
+/** @brief Return the left DM motor handle, or null when unavailable. */
 DM_motor_t *Rising_Get_DmMotor_L(void);
+/** @brief Return the right DM motor handle, or null when unavailable. */
 DM_motor_t *Rising_Get_DmMotor_R(void);
 
 #endif /* RISING_CTRL_H */

@@ -1,6 +1,15 @@
 #ifndef CHASSIS_CONFIG_H
 #define CHASSIS_CONFIG_H
 
+/**
+ * @file chassis_config.h
+ * @brief Central calibration and timing constants for the chassis subsystem.
+ *
+ * Keep paired values (limits, gains, durations, and kinematic coefficients)
+ * coherent when tuning.  Units are stated in comments; changing these macros
+ * changes real actuator behavior and therefore requires hardware validation.
+ */
+
 /* Chassis task timing */
 #define Chassis_Task_Loop_Delay_MS 2U                         /* 底盘任务主循环延时，单位 ms */
 #define Chassis_Task_Loop_Period_S 0.002f                    /* 底盘任务主循环周期，单位 s */

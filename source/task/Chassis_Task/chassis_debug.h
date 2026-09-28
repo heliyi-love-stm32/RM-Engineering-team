@@ -1,12 +1,21 @@
 #ifndef CHASSIS_DEBUG_H
 #define CHASSIS_DEBUG_H
 
+/**
+ * @file chassis_debug.h
+ * @brief Read-only-style diagnostic data published by the chassis subsystem.
+ *
+ * Arrays use wheel order defined by the drive module.  Power values are model
+ * estimates unless explicitly named referee; all fields may change each loop.
+ */
+
 #include "chassis_config.h"
 #include "arm_math_types.h"
 #include <stdint.h>
 
 typedef struct
 {
+    /** Per-wheel target/feedback/current-command and power-estimate channels. */
     float32_t chassis_target_speed_3508[4];
     float32_t chassis_actual_speed_3508[4];
     float32_t chassis_output_raw_3508[4];
@@ -54,6 +63,7 @@ typedef struct
     float32_t rising_actual_angle_dm_r;
 } Chassis_Debug_t;
 
+/** Volatile live diagnostic snapshot; production control must not write it. */
 extern volatile Chassis_Debug_t g_chassis_debug;
 
 #endif /* CHASSIS_DEBUG_H */

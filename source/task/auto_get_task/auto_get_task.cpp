@@ -7,6 +7,11 @@ huangjiazhi::TrajectoryExecutor traj_exec;
 static volatile auto_key_cmd_t cmd_req = CMD_NONE;
 static auto_key_cmd_t last_cmd = CMD_NONE;
 
+/**
+ * @brief 切换机械臂轨迹组并从首点开始定时回放。
+ * @param group 新轨迹的采样点数组。
+ * @param size 采样点数量。
+ */
 void Auto_Switch_Group(huangjiazhi::traj_group_point_t *group, uint32_t size)
 {
     traj_exec.init(group, size, 5);
@@ -16,6 +21,7 @@ void Auto_Switch_Group(huangjiazhi::traj_group_point_t *group, uint32_t size)
     osTimerStart(auto_traj_timer_id, 5);
 }
 
+/** @brief 提交由按键触发的自动取放命令，供轨迹任务异步执行。 */
 extern "C" void auto_key_cmd_exec(auto_key_cmd_t cmd){
     cmd_req = cmd;
 }
@@ -39,6 +45,11 @@ extern "C" void auto_key_get_cmd_exec(auto_key_get_cmd_t cmd){
     }
 }
 
+/**
+ * @brief 自动取放任务。
+ *
+ * 启动默认轨迹定时器，并消费按键命令以切换预置取放、放置或紧急收纳轨迹。
+ */
 extern "C" void auto_get_task(void *argument) {
   UNUSED(argument);
 #if TRAJ_DEBUG

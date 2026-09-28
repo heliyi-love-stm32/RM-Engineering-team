@@ -11,6 +11,10 @@
 extern rc_info_t remoter;
 extern keyboard_t kb_info;
 
+/**
+ * @brief 返回当前控制源对应的键盘状态。
+ * @return 编译期开关选择的遥控器内嵌键盘或自定义控制器键盘。
+ */
 const keyboard_t *Referee_GetActiveKeyboard(void)
 {
 #if (USE_REMOTER_KEYBOARD != 0)
@@ -20,6 +24,11 @@ const keyboard_t *Referee_GetActiveKeyboard(void)
 #endif
 }
 
+/**
+ * @brief 处理普通按键的上升沿事件并切换底盘、UI 或机械臂功能状态。
+ * @param key ASCII 按键编码。
+ * @param ctrl_pressed Ctrl 是否同时按下；普通键分支中仅保留接口一致性。
+ */
 void Referee_OnKeyboardKeyPressed(uint8_t key, uint8_t ctrl_pressed)
 {
     (void)ctrl_pressed;

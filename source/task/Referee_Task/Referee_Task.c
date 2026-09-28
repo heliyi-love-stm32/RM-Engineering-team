@@ -20,6 +20,12 @@ Engineer_Mode_t Engineer_Mode = {
  * @brief 裁判系统任务
  * @note 执行键盘边沿检测，键盘数据源由 USE_REMOTER_KEYBOARD 宏控制
  */
+/**
+ * @brief 裁判系统与自定义控制器服务任务。
+ *
+ * 初始化两路 UART 接收，解析裁判数据和控制器数据，执行键盘边沿分发，
+ * 并周期维护客户端图形 UI。
+ */
 void Referee_Task(void *argument)
 {
     UNUSED(argument);
