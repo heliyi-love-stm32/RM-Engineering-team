@@ -147,12 +147,12 @@ uint32_t jointFollowAngleBuffer[512];
 osStaticThreadDef_t jointFollowAngleControlBlock;
 
 const osThreadAttr_t jointFollowAngle_attributes = {
-    .name       = "jointFollowAngle",
-    .cb_mem     = &jointFollowAngleControlBlock,
-    .cb_size    = sizeof(jointFollowAngleControlBlock),
-    .stack_mem  = &jointFollowAngleBuffer[0],
-    .stack_size = sizeof(jointFollowAngleBuffer),
-    .priority   = (osPriority_t)osPriorityNormal,
+    .name       = "jointFollowAngle",// 关节跟随角度任务名称
+    .cb_mem     = &jointFollowAngleControlBlock,// 控制块地址（静态创建）
+    .cb_size    = sizeof(jointFollowAngleControlBlock),// 控制块大小
+    .stack_mem  = &jointFollowAngleBuffer[0],// 栈空间地址
+    .stack_size = sizeof(jointFollowAngleBuffer),// 栈大小
+    .priority   = (osPriority_t)osPriorityNormal,// 优先级（与默认任务相同）
 };
 
  /* Definitions for Arm_State_Machine_Task */
@@ -275,89 +275,16 @@ const osSemaphoreAttr_t controlBinaryIMU_attributes = {
  };
 //  /* Definitions for test_CAN3_ARM */
 //  osThreadId_t test_CAN3_ARMHandle;
-//  uint32_t test_CAN3_ARMBuffer[256];
+//  uint32_t test_CAN3_ARMBuffer[256];// 栈空间
 //  osStaticThreadDef_t test_CAN3_ARMControlBlock;
 //  const osThreadAttr_t test_CAN3_ARM_attributes = {
 //      .name = "test_CAN3_ARM",
-//      .cb_mem = &test_CAN3_ARMControlBlock,
-//      .cb_size = sizeof(test_CAN3_ARMControlBlock),
-//      .stack_mem = &test_CAN3_ARMBuffer[0],
-//      .stack_size = sizeof(test_CAN3_ARMBuffer),
-//      .priority = (osPriority_t) osPriorityNormal,
+//      .cb_mem = &test_CAN3_ARMControlBlock,// 控制块地址（静态创建）
+//      .cb_size = sizeof(test_CAN3_ARMControlBlock),// 控制块大小
+//      .stack_mem = &test_CAN3_ARMBuffer[0],// 栈空间地址
+//      .stack_size = sizeof(test_CAN3_ARMBuffer),// 栈大小
+//      .priority = (osPriority_t) osPriorityNormal,// 优先级（与默认任务相同）
 //  };
-
- /* Definitions for Joint1_Move_Task */
- osThreadId_t Joint1_Move_TaskHandle;
- uint32_t Joint1_Move_TaskBuffer[128];
- osStaticThreadDef_t Joint1_Move_TaskControlBlock;
- const osThreadAttr_t Joint1_Move_Task_attributes = {
-     .name = "Joint1_Move_Task",
-     .cb_mem = &Joint1_Move_TaskControlBlock,
-     .cb_size = sizeof(Joint1_Move_TaskControlBlock),
-     .stack_mem = &Joint1_Move_TaskBuffer[0],
-     .stack_size = sizeof(Joint1_Move_TaskBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
- /* Definitions for Joint2_Move_Task  */
- osThreadId_t Joint2_Move_TaskHandle;
- uint32_t Joint2_Move_TaskBuffer[128];
- osStaticThreadDef_t Joint2_Move_TaskControlBlock;
- const osThreadAttr_t Joint2_Move_Task_attributes = {
-     .name = "Joint2_Move_Task ",
-     .cb_mem = &Joint2_Move_TaskControlBlock,
-     .cb_size = sizeof(Joint2_Move_TaskControlBlock),
-     .stack_mem = &Joint2_Move_TaskBuffer[0],
-     .stack_size = sizeof(Joint2_Move_TaskBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
- /* Definitions for Joint3_Move_Task */
- osThreadId_t Joint3_Move_TaskHandle;
- uint32_t Joint3_Move_TaskBuffer[128];
- osStaticThreadDef_t Joint3_Move_TaskControlBlock;
- const osThreadAttr_t Joint3_Move_Task_attributes = {
-     .name = "Joint3_Move_Task",
-     .cb_mem = &Joint3_Move_TaskControlBlock,
-     .cb_size = sizeof(Joint3_Move_TaskControlBlock),
-     .stack_mem = &Joint3_Move_TaskBuffer[0],
-     .stack_size = sizeof(Joint3_Move_TaskBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
- /* Definitions for Joint4_Move_Task */
- osThreadId_t Joint4_Move_TaskHandle;
- uint32_t Joint4_Move_TaskBuffer[128];
- osStaticThreadDef_t Joint4_Move_TaskControlBlock;
- const osThreadAttr_t Joint4_Move_Task_attributes = {
-     .name = "Joint4_Move_Task",
-     .cb_mem = &Joint4_Move_TaskControlBlock,
-     .cb_size = sizeof(Joint4_Move_TaskControlBlock),
-     .stack_mem = &Joint4_Move_TaskBuffer[0],
-     .stack_size = sizeof(Joint4_Move_TaskBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
- /* Definitions for Joint5_Move_Task */
- osThreadId_t Joint5_Move_TaskHandle;
- uint32_t Joint5_Move_TaskBuffer[128];
- osStaticThreadDef_t Joint5_Move_TaskControlBlock;
- const osThreadAttr_t Joint5_Move_Task_attributes = {
-     .name = "Joint5_Move_Task",
-     .cb_mem = &Joint5_Move_TaskControlBlock,
-     .cb_size = sizeof(Joint5_Move_TaskControlBlock),
-     .stack_mem = &Joint5_Move_TaskBuffer[0],
-     .stack_size = sizeof(Joint5_Move_TaskBuffer),
-     .priority = (osPriority_t) osPriorityAboveNormal,
- };
- /* Definitions for Joint6_Move_Task */
- osThreadId_t Joint6_Move_TaskHandle;
- uint32_t Joint6_Move_TaskBuffer[128];
- osStaticThreadDef_t Joint6_Move_TaskControlBlock;
- const osThreadAttr_t Joint6_Move_Task_attributes = {
-     .name = "Joint6_Move_Task",
-     .cb_mem = &Joint6_Move_TaskControlBlock,
-     .cb_size = sizeof(Joint6_Move_TaskControlBlock),
-     .stack_mem = &Joint6_Move_TaskBuffer[0],
-     .stack_size = sizeof(Joint6_Move_TaskBuffer),
-     .priority = (osPriority_t) osPriorityAboveNormal,
- };
 
  /* Definitions for View_Gimbal_Task */
  /* 视觉云台 / 舵机控制任务。 */
@@ -435,13 +362,6 @@ void Watchdog_Task(void *arguments);
 void SerialPlot(void *argument);
 void IMU_Task(void *argument);
 // void test_CAN3_ARM(void *argument);
-void Joint1_Move_Task(void *argument);
-void Joint2_Move_Task(void *argument);
-void Joint3_Move_Task(void *argument);
-void Joint4_Move_Task(void *argument);
-void Joint5_Move_Task(void *argument);
-void Joint6_Move_Task(void *argument);
-
 void arm_reset_task(void *argument);
 /* USER CODE END FunctionPrototypes */
 
@@ -522,12 +442,6 @@ void MX_FREERTOS_Init(void) {
   /* 自动取矿行为任务。 */
   auto_get_taskHandle = osThreadNew(auto_get_task, NULL, &auto_get_task_attributes);
   // vofaHandle = osThreadNew(vofa_send, NULL, &vofa_attributes);
-  // Joint1_Move_TaskHandle = osThreadNew(Joint1_Move_Task, NULL, &Joint1_Move_Task_attributes);
-  // Joint2_Move_TaskHandle = osThreadNew(Joint2_Move_Task, NULL, &Joint2_Move_Task_attributes);
-  // Joint3_Move_TaskHandle = osThreadNew(Joint3_Move_Task, NULL, &Joint3_Move_Task_attributes);
-  // Joint4_Move_TaskHandle = osThreadNew(Joint4_Move_Task, NULL, &Joint4_Move_Task_attributes);
-  // Joint5_Move_TaskHandle = osThreadNew(Joint5_Move_Task, NULL, &Joint5_Move_Task_attributes);
-  // Joint6_Move_TaskHandle = osThreadNew(Joint6_Move_Task, NULL, &Joint6_Move_Task_attributes);
   //uart_Transmit_AngleHandle = osThreadNew(uart_Transmit_Angle, NULL, &uart_Transmit_Angle_attributes);
   /* 底盘驱动、模式切换与抬升状态机。 */
   Chassis_TaskHandle = osThreadNew(Chassis_Task, NULL, &Chassis_Task_attributes);
