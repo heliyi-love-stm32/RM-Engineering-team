@@ -1,4 +1,9 @@
 
+/**
+ * @file motor.DJI.c
+ * @brief DJI 电机 CAN 控制与反馈解析实现。
+ */
+
 #include "DBusSys.h"
 #include "motor_DJI.h"
 #include "stm32h7xx_hal_fdcan.h"

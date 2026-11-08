@@ -1,4 +1,7 @@
-/* send_robot_state.c - 机器人状态数据打包及UART发送模块 */
+/**
+ * @file send_robot_state.c
+ * @brief 机器人状态数据打包及 UART 发送实现。
+ */
 
 #include "computer_pack.h"
 #include "main.h"

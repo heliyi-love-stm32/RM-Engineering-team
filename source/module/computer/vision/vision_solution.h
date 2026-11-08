@@ -1,9 +1,14 @@
+/**
+ * @file vision_solution.h
+ * @brief 自瞄目标数据和弹道解算接口。
+ */
 #ifndef VISION_SOLUTION_H
 #define VISION_SOLUTION_H
 
 #include "main.h"
 #include "computer_pack.h"
 
+/** @brief 视觉识别目标装甲板类型。 */
 enum ARMOR_ID
 {
   ARMOR_OUTPOST = 0,
@@ -16,6 +21,7 @@ enum ARMOR_ID
   ARMOR_BASE = 7
 };
 
+/** @brief 目标装甲板数量类型。 */
 enum ARMOR_NUM
 {
   ARMOR_NUM_BALANCE = 2,
@@ -23,6 +29,7 @@ enum ARMOR_NUM
   ARMOR_NUM_NORMAL = 4
 };
 
+/** @brief 弹道解算所需的自身和目标参数。 */
 typedef struct 
 {
   float k;             //弹道系数
@@ -51,6 +58,7 @@ typedef struct
   enum ARMOR_NUM armor_num;   //装甲板数字  2-balance 3-outpost 4-normal
 }SolveTrajectoryParams_t;
 
+/** @brief 目标装甲板在世界坐标系中的位姿。 */
 typedef struct 
 {
   float x;           //装甲板在世界坐标系下的x
@@ -59,8 +67,13 @@ typedef struct
   float yaw;         //装甲板在世界坐标系下的yaw角度
 }tar_pos;
 
-extern float aim_x_n, aim_y_n, aim_z_n;//机器人目标点
+/** @brief 当前机器人目标点坐标。 */
+extern float aim_x_n, aim_y_n, aim_z_n;
 
+/** @brief 根据视觉目标计算云台目标 yaw 和 pitch。
+ *  @param target_yaw 输出目标 yaw 指针。
+ *  @param target_pitch 输出目标 pitch 指针。
+ */
 void vision_solution(float *target_yaw, float *target_pitch);
 
 #endif // !

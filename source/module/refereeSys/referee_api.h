@@ -1,3 +1,7 @@
+/**
+ * @file referee_api.h
+ * @brief 竞赛裁判系统数据接收、解析和状态访问接口。
+ */
 #ifndef _REFEREE_API_H
 #define _REFEREE_API_H
 
@@ -8,17 +12,24 @@
 #include "uart_api.h"
 #include "usart.h"
 
-#define CtrllerData_Length 28
-#define RE_RX_BUFFER_SIZE 255u // 裁判系统接收缓冲区大小
+/** @brief 裁判系统接收缓冲区大小（字节）。 */
+#define RE_RX_BUFFER_SIZE 255u
 
+/** @brief 客户端绘图区域宽度。 */
 #define SCREEN_WIDTH 1080
+/** @brief 客户端绘图区域长度。 */
 #define SCREEN_LENGTH 1920
 
+/** @brief 裁判系统数据包最大长度。 */
 #define MAX_SIZE 128
-#define frameheader_len 5 // 帧头长度
-#define cmd_len 2		  // 命令码长度
-#define crc_len 2		  // CRC16校验码长度
+/** @brief 帧头长度（字节）。 */
+#define frameheader_len 5
+/** @brief 命令码长度（字节）。 */
+#define cmd_len 2
+/** @brief CRC16 校验码长度（字节）。 */
+#define crc_len 2
 
+/** @brief 裁判系统接收状态及各类比赛数据。 */
 typedef struct
 {
 	// referee_id_t referee_id;
@@ -41,6 +52,7 @@ typedef struct
 	uint8_t init_flag;
 } referee_info_t;
 
+/** @brief 自定义控制器和键鼠数据。 */
 typedef struct
 {
 	xFrameHeader FrameHeader; // 接收到的帧头信息
@@ -51,36 +63,28 @@ typedef struct
 	keyboard_t keyboard;					   // 0x0304
 } custom_controller_info_t;
 
-typedef struct
-{
-	uint8_t uart_init_ok;
-	uint32_t rx_event_count;
-	uint32_t rx_total_bytes;
-	uint16_t rx_last_size;
-	uint8_t rx_last_head[8];
-	uint32_t frame_parse_count;
-	uint32_t crc8_fail_count;
-	uint32_t crc16_fail_count;
-	uint16_t last_cmd_id;
-	uint16_t last_frame_length;
-	uint8_t last_robot_id;
-} referee_link_debug_t;
-
-void JudgeReadData(uint8_t *buff);
-void CtrllerReadData(uint8_t *buff);
-referee_info_t *get_referee_msg(void);
-custom_controller_info_t *get_custom_controller_msg(void);
-void referee_data_pack_handle(uint8_t sof, uint16_t cmd_id, uint8_t *p_data, uint16_t len);
-void referee_init(UART_HandleTypeDef *huart);
-void ctrller_init(UART_HandleTypeDef *huart);
-HAL_StatusTypeDef referee_send_raw_data(const uint8_t *p_data, uint16_t len, uint32_t timeout);
-uint8_t referee_is_inited(void);
-
-/* 常规链路调试结构体：
- * 1. 先看 UART1 是否真的有数据进来；
- * 2. 再看 CRC 和帧解析有没有通过；
- * 3. 最后确认 0x0201 是否被解析到，从而拿到 robot_id。
+/** @brief 解析裁判系统接收缓冲区。
+ *  @param buff 指向接收数据的缓冲区。
  */
-extern volatile referee_link_debug_t g_referee_link_debug;
+void JudgeReadData(uint8_t *buff);
+/** @brief 解析自定义控制器接收缓冲区。
+ *  @param buff 指向接收数据的缓冲区。
+ */
+void CtrllerReadData(uint8_t *buff);
+/** @brief 获取裁判系统状态数据。
+ *  @return 裁判系统状态结构体指针。
+ */
+referee_info_t *get_referee_msg(void);
+/** @brief 获取自定义控制器数据。
+ *  @return 自定义控制器数据结构体指针。
+ */
+custom_controller_info_t *get_custom_controller_msg(void);
+/** @brief 按命令码处理一帧裁判系统数据。
+ *  @param sof 帧起始字节。
+ *  @param cmd_id 数据命令码。
+ *  @param p_data 数据负载指针。
+ *  @param len 数据负载长度。
+ */
+void referee_data_pack_handle(uint8_t sof, uint16_t cmd_id, uint8_t *p_data, uint16_t len);
 
-#endif 
+#endif

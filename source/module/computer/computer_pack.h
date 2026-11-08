@@ -1,3 +1,7 @@
+/**
+ * @file computer_pack.h
+ * @brief 上位机视觉、机器人状态和控制数据包定义。
+ */
 #ifndef COMPUTER_PACK_H
 #define COMPUTER_PACK_H
 
@@ -5,6 +9,7 @@
 #include <stdbool.h>
 
 #pragma pack(1)
+/** @brief 发送给视觉上位机的自瞄请求数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0x5A;
@@ -20,6 +25,7 @@ typedef struct
   uint16_t checksum;
 }SendPacketVision_t;
 
+/** @brief 从视觉上位机接收的目标跟踪数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0xA5;
@@ -41,6 +47,7 @@ typedef struct
   uint16_t checksum;
 }ReceivedPacketVision_t;
 
+/** @brief 从上位机接收的底盘速度数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0xA4;
@@ -53,6 +60,7 @@ typedef struct
   uint16_t checksum;
 }ReceivedPacketTwist_t;
 
+/** @brief 从上位机接收的机器人控制数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0xA3;
@@ -61,6 +69,7 @@ typedef struct
   uint16_t checksum;
 }ReceivedPacketRobotControl_t;
 
+/** @brief 发送给上位机的全场机器人血量数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0x5B;
@@ -83,6 +92,7 @@ typedef struct
   uint16_t checksum;
 }SendPacketAllRobotHP_t;
 
+/** @brief 发送给上位机的比赛状态数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0x5C;
@@ -91,6 +101,7 @@ typedef struct
   uint16_t checksum;
 }SendPacketGameStatus_t;
 
+/** @brief 发送给上位机的本机状态数据包。 */
 typedef struct 
 {
   uint8_t header;// = 0x5D;

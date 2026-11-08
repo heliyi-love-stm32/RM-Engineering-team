@@ -1,3 +1,7 @@
+/**
+ * @file computer_sys.c
+ * @brief 上位机串口接收调度实现。
+ */
 #include "main.h"
 #include "config.h"
 #include "computer_sys.h"

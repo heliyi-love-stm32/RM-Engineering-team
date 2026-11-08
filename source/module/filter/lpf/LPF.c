@@ -1,14 +1,8 @@
+/**
+ * @file LPF.c
+ * @brief 一阶低通滤波器实现。
+ */
 #include "LPF.h"
-
-float filterValue(LowPassFilter *filter, float input)
-{
-    return filterValue_Calc(filter, input);
-}
-
-void initializeFilter(LowPassFilter *filter, float alpha)
-{
-    lizeFilter_init(filter, alpha);
-}
 
 /**
  * @brief 一阶低通滤波器初始化函数。

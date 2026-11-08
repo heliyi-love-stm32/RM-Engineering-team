@@ -1,3 +1,7 @@
+/**
+ * @file IMUtool.c
+ * @brief BMI088 采样和姿态更新实现。
+ */
 #include "IMUtool.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -6,6 +10,8 @@
 #include "tim.h"
 #include "string.h"
 #include "config.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 static const float DES_TEMP = 40.0f;
 static const float KP = 100.0f;
@@ -29,6 +35,19 @@ uint32_t temp_Ticks = 0;
 uint8_t attitude_flag = 0;
 uint32_t correct_times = 0;
 float gyro_correct[3] = {0};
+static IMU_Heading_t s_heading;
+static uint8_t s_heading_ready;
+
+uint8_t IMU_GetHeading(IMU_Heading_t *heading)
+{
+    uint8_t ready;
+    if (heading == NULL) return 0U;
+    taskENTER_CRITICAL();
+    *heading = s_heading;
+    ready = s_heading_ready;
+    taskEXIT_CRITICAL();
+    return ready;
+}
 
 /**
  * @brief PID温度控制函数。
@@ -107,6 +126,13 @@ void IMUsys(void)
         // HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,GPIO_PIN_SET);
         Mahony_update(gyro[0], gyro[1], gyro[2] * (IMU_YAW_OFFSET_CORRECTION), accel[0], accel[1], accel[2], 0, 0, 0);
         Mahony_computeAngles(); // 角度计算
+        /* 在任务临界区内发布完整采样，避免控制任务读到不同帧的数据。 */
+        taskENTER_CRITICAL();
+        s_heading.yaw_deg = getYaw();
+        s_heading.yaw_rate_dps = gyro[2] * IMU_YAW_OFFSET_CORRECTION * 57.2957795f;
+        s_heading.update_ms = HAL_GetTick();
+        s_heading_ready = 1U;
+        taskEXIT_CRITICAL();
         //=============================================================================
         // 获取姿态角度函数
         // getPitch(); // 获得pitch

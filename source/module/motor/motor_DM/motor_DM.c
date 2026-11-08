@@ -1,3 +1,8 @@
+/**
+ * @file motor_DM.c
+ * @brief 达妙电机控制命令封装和反馈数据解析实现。
+ */
+
 #include "motor_DM.h"
 #include "string.h"
 #include "uint_float_convert.h"
@@ -148,8 +153,7 @@ void Speed_CtrlMotorDM(DM_motor_t *motor, float vel)
  */
 void PosSpeed_CtrlMotorDM(DM_motor_t *motor, float _pos, float _vel)
 {
-    uint32_t origin_id = motor->can_cfg.id;
-    motor->can_cfg.id+=POS_MODE;
+    motor->can_cfg.id += POS_MODE;
     uint8_t *pbuf, *vbuf;
     pbuf = (uint8_t *)&_pos;
     vbuf = (uint8_t *)&_vel;
@@ -159,14 +163,13 @@ void PosSpeed_CtrlMotorDM(DM_motor_t *motor, float _pos, float _vel)
     motor->can_cfg.len = FDCAN_DLC_BYTES_8;
 
     can_msg_send_classical(&motor->can_cfg);
-    motor->can_cfg.id = origin_id;
 }
 
 /**
 ************************************************************************
 * @brief:      	mit_ctrl: MIT模式下的电机控制函数
 * @param[in]:   hcan:			指向CAN_HandleTypeDef结构的指针，用于指定CAN总线
-* @param[in]:   motor_id:	    电机ID，指定目标电机
+* @param[in]:   motor_id:	电机ID，指定目标电机
 * @param[in]:   pos:			位置给定值
 * @param[in]:   vel:			速度给定值
 * @param[in]:   kp:				位置比例系数

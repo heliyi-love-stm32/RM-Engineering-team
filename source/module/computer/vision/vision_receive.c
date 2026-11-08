@@ -1,3 +1,7 @@
+/**
+ * @file vision_receive.c
+ * @brief 视觉上位机数据包接收和校验实现。
+ */
 #include "vision_receive.h"
 #include "uart_api.h"
 #include "crc_api.h"

@@ -1,9 +1,14 @@
+/**
+ * @file vision_receive.h
+ * @brief 视觉上位机数据接收和目标状态访问接口。
+ */
 #ifndef VISION_RECEIVE_H
 #define VISION_RECEIVE_H
 
 #include "computer_pack.h"
 
-extern ReceivedPacketVision_t ReceivedPacketVision; // 保存接收到的视觉数据
+/** @brief 最近一次接收到的视觉数据。 */
+extern ReceivedPacketVision_t ReceivedPacketVision;
 
 /**
  * @brief 获取视觉数据包的ID值
@@ -25,6 +30,9 @@ extern ReceivedPacketVision_t ReceivedPacketVision; // 保存接收到的视觉�
  */
 #define is_tracking() (ReceivedPacketVision.tracking)
 
+/** @brief 解析视觉上位机数据包。
+ *  @param rx_buf 接收缓冲区指针。
+ */
 void vision_receive_solve(uint8_t *rx_buf);
 
 #endif // !VISION_RECEIVE_H

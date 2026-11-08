@@ -67,24 +67,3 @@ source\task
 .clangd
 .settings
 .vscode/
-
-# .cache\
-.cache
-run.sh
-
-#script
-sh/
-*.sh
-*.jlink
-
-#ai_tools
-ai
-
-#.envrc
-.envrc
-
-# build_files
-compile_commands.json
-
-.nvim.lua
-

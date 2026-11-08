@@ -95,11 +95,6 @@ uart_status_t uart_reg_cheak(uart_rx_t *uart_rx_msg)
     return UART_OK;
 }
 
-/**
- * @brief 注册一个 UART 接收端并启动 Receive-to-Idle 中断接收。
- *
- * 每个硬件串口只能注册一个接收描述符；后续数据通过对应的 Hook 回调分发。
- */
 uart_status_t uart_rx_init(uart_rx_t *uart_rx_msg)
 {
     // 安全效验
@@ -131,21 +126,11 @@ uart_status_t uart_rx_init(uart_rx_t *uart_rx_msg)
     case (unsigned long)UART7_BASE:
         uart7_msg = uart_rx_msg;
         break;
-    case (unsigned long)USART10_BASE:
-        uart10_msg = uart_rx_msg;
-        break;
     default:
         return UART_ERROR;
     }
 
-    HAL_UARTEx_ReceiveToIdle_IT(uart_rx_msg->rx_msg->huart, uart_rx_msg->rx_msg->pBuffer, uart_rx_msg->rx_msg->Len);
-    return UART_OK;
-}
-
-/** @brief 以阻塞方式发送一帧 UART 数据。 */
-uart_status_t  uart_tx_send(uart_msg_t* uart_msg,uint32_t timeout)
-{
-    HAL_UART_Transmit(uart_msg->huart, uart_msg->pBuffer, uart_msg->Len, timeout);
+    HAL_UARTEx_ReceiveToIdle_IT(uart_rx_msg->rx_msg->huart, uart_rx_msg->rx_msg->pBuffer, uart_rx_msg->rx_msg->Len * 2);
     return UART_OK;
 }
 

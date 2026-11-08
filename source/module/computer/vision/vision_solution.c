@@ -1,4 +1,7 @@
-/* vision_solution.c - 弹道解算核心算法模块 */
+/**
+ * @file vision_solution.c
+ * @brief 自瞄目标弹道解算实现。
+ */
 
 #include "vision_solution.h"
 #include "uart_api.h"
@@ -123,10 +126,6 @@ void solve_trajectory(float aim_x, float aim_y, float aim_z,
     *yaw = atan2f(aim_y, aim_x);           // 计算偏航角
 }
 
-/**
- * @brief 按瞄准角误差、距离和运动方向对四块装甲板评分并选出目标。
- * @return 最优装甲板在 plates 数组中的下标。
- */
 int select_optimal_armor(tar_pos *plates, float current_yaw)
 {
     // 定义角度、距离、运动趋势的权重
