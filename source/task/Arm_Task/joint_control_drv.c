@@ -74,11 +74,14 @@ void joint_motor_init(Joint_t *Joint) {
     for (int joint_index = 0; joint_index < JOINT_NUM; joint_index++) {
         /* 动态分配电机结构体内存 */
         Joint[joint_index].joint_motor = pvPortMalloc(sizeof(DM_motor_t));
-
+        // 为电机结构体分配内存后，进行基本初始化
         /* 配置CAN通信参数 */
-        Joint[joint_index].joint_motor->can_cfg.id = 0x01 + joint_index;           /**< 从机ID */
+        Joint[joint_index].joint_motor->can_cfg.id = 0x01 + joint_index;
+        //设置can ID  ，can_cfg.id是从机ID
+        // /**< 从机ID */
         Joint[joint_index].joint_motor->motor_msg.can_msg.id = 0x11 + joint_index; /**< 主机反馈ID */
-
+        //设置电机反馈ID，motor_msg.can_msg.id 是主机反馈ID
+        // 配置电机的基本参数，如ID和反馈ID
         /* 配置电机限制参数 */
         Joint[joint_index].joint_motor->tmp.PMAX = 12.5f;  /**< 最大位置 (rad) */
         Joint[joint_index].joint_motor->tmp.VMAX = 3.0f;   /**< 最大速度 (rad/s) */
@@ -110,7 +113,7 @@ void joint_dof_init(Joint_t *Joint) {
  */
 void joint_init(Joint_t *Joint) {
     joint_motor_init(Joint);  /**< 初始化关节电机 */
-}
+}//这里就是只是初始化关节电机而已
 
 /**
  * @brief 关节运动控制
@@ -144,18 +147,6 @@ void Joint_Move(Joint_t Joint[], target_point_t Target_Point[]) {
 }
 
 /**
- * @brief 弧度输入转换为目标值 (已弃用)
- * @param input_radian 输入弧度
- * @param joint_index 关节索引
- * @return 经过位置限制的目标弧度
- */
-__attribute__((deprecated))
-static inline float Radian_Input_To_Target(float input_radian,
-                                           int joint_index) {
-    return Joint_Pos_Limit(input_radian, joint_index);
-}
-
-/**
  * @brief 控制器数据转换为输入弧度
  * @param joint_radian 关节弧度数组
  * @note 根据各关节极性映射调整方向
@@ -184,15 +175,3 @@ void Joint_Disable_All(Joint_t *joint) {
 inline void Joint_save_zero(Joint_t *joint) {
     Motor_DM_Save_Zero(joint->joint_motor);
 }
-
-/* 以下为备用的关节电机控制函数 (已弃用) */
-/*
-void Joint_Motor_Ctrl(Joint_t *Joint, float input_radian) {
-    for (int joint_index = 0; joint_index < JOINT_NUM; joint_index++) {
-        osDelay(1);
-        Joint_Motor_PosSpeed_Ctrl(&Joint[joint_index],
-                                  Radian_Input_To_Target(input_radian, joint_index),
-                                  JOINT_DEFAULT_VELOCITY);
-    }
-}
-*/

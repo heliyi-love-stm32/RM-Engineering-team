@@ -7,11 +7,7 @@
 #include "arm_state_machine.h"
 #include "arm_handle.h"
 
-#if TRAJ_DEBUG
-arm_control_mode_t Arm_Current_Control_Mode = Arm_Auto_Mode;
-#else
 arm_control_mode_t Arm_Current_Control_Mode = Arm_IDLE_Mode;
-#endif
 
 /* 起身位置关节弧度预设 */
 float Rising_Joint_Radian[6] = {0, 1.4, 1.3, 0, 0.4, 0};
@@ -82,16 +78,12 @@ void Joint_Control_Mode_Manager(Joint_t *Joint) {
 
     case Arm_Rising_Mode:
         /**< 起身模式: 发布起身位置和速度 */
-        Point_Publisher(Target_Point, Rising_Joint_Radian, Rising_Velcoity);
+        Point_Publisher(Target_Point, Rising_Joint_Radian, Rising_Velcoity);// 发布起身模式目标点
         break;
 
     case Arm_IDLE_Mode:
-        /**< 空闲模式: 根据调试配置切换到下一模式 */
-#if TRAJ_DEBUG
-        Arm_Current_Control_Mode = Arm_Auto_Mode;  /**< 调试模式: 切换到自动模式 */
-#else
-        Arm_Current_Control_Mode = Arm_Custom_Controller_Follow_Mode;  /**< 正常模式: 切换到控制器跟随 */
-#endif
+        /**< 空闲模式: 切换到控制器跟随 */
+        Arm_Current_Control_Mode = Arm_Custom_Controller_Follow_Mode;// 切换到控制器跟随模式
         break;
 
     case Arm_Custom_Controller_Follow_Mode:
@@ -113,10 +105,6 @@ void Joint_Control_Mode_Manager(Joint_t *Joint) {
     case Arm_Zero_Mode:
         /**< 零位模式: 移动到零位 */
         Point_Publisher(Target_Point, Zero_Joint_Radian, Zero_Velocity);
-        break;
-
-    case Arm_Auto_Mode:
-        Arm_Auto_Mode_Handle();  /**< 自动模式 */
         break;
 
     case ARM_RESET_ZERO_MODE:

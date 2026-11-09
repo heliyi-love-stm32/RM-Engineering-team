@@ -10,14 +10,6 @@ extern "C" {
 
 #include "arm_move_by_point_controller.cpp"
 
-void FULL_ARM_HANDLE(void)
-{
-    if (Joint[1].joint_motor->motor_msg.motor_angle >= 1.5) {
-
-        Target_Point[1].velocity = 0.1;
-        Target_Point[2].velocity = 2.0;
-    }
-} 
 static huangjiazhi::move_by_point_controller reset_ctrl;
 
 void Arm_Reset(Joint_t* Joint)
@@ -54,9 +46,6 @@ void Arm_Reset(Joint_t* Joint)
       EndEffector_Motor_Enable(&EndEffector);
     }
   }
-}
-extern "C" void ARM_FULL_RESET_HANDLE(void){
-    
 }
 /**
  * @brief 机械臂零位恢复后台任务。

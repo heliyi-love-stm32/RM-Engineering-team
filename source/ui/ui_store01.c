@@ -179,27 +179,27 @@ void ui_init_store01(void)
     ui_store01_init_figure(ui_store01_Ungroup_Regetflag_get3, 0U, 1600U, 430U, 5U, 10U, 10U);
     ui_store01_init_figure(ui_store01_Ungroup_Regetflag_get4, 0U, 1600U, 400U, 5U, 10U, 10U);
 
-    ui_store01_init_string(ui_store01_Ungroup_Chas_mode, 3U, 80U, 800U, 3U, 25U, "CHas_mode");
+    ui_store01_init_string(ui_store01_Ungroup_Chas_mode, 3U, 80U, 800U, 3U, 25U, " ");
     ui_store01_init_string(ui_store01_Ungroup_Arm_mode, 3U, 80U, 750U, 3U, 25U, "Arm_Mode");
-    ui_store01_init_string(ui_store01_Ungroup_Chas_disp, 0U, 320U, 800U, 3U, 25U, "CHas_disp");
-    ui_store01_init_string(ui_store01_Ungroup_arm_disp, 0U, 320U, 750U, 3U, 25U, "arm_disp");
-    ui_store01_init_string(ui_store01_Ungroup_risg_disp, 0U, 320U, 700U, 3U, 25U, "risg_disp");
-    ui_store01_init_string(ui_store01_Ungroup_Orig_disp, 0U, 320U, 650U, 3U, 25U, "orig_disp");
-    ui_store01_init_string(ui_store01_Ungroup_Rising_Mode, 3U, 80U, 700U, 3U, 25U, "Risg_mode");
+    ui_store01_init_string(ui_store01_Ungroup_Chas_disp, 0U, 320U, 800U, 3U, 25U, " ");
+    ui_store01_init_string(ui_store01_Ungroup_arm_disp, 0U, 320U, 750U, 3U, 25U, "Idle");
+    ui_store01_init_string(ui_store01_Ungroup_risg_disp, 0U, 320U, 700U, 3U, 25U, " ");
+    ui_store01_init_string(ui_store01_Ungroup_Orig_disp, 0U, 320U, 650U, 3U, 25U, " ");
+    ui_store01_init_string(ui_store01_Ungroup_Rising_Mode, 3U, 80U, 700U, 3U, 25U, " ");
     ui_store01_init_string(ui_store01_Ungroup_getflag_text1, 0U, 1518U, 820U, 2U, 20U, "1");
     ui_store01_init_string(ui_store01_Ungroup_getflag_text2, 0U, 1548U, 820U, 2U, 20U, "2");
     ui_store01_init_string(ui_store01_Ungroup_getflag_text3, 0U, 1578U, 820U, 2U, 20U, "3");
     ui_store01_init_string(ui_store01_Ungroup_getflag_text4, 0U, 1608U, 820U, 2U, 20U, "4");
     ui_store01_init_string(ui_store01_Ungroup_getflag_text5, 0U, 1638U, 820U, 2U, 20U, "5");
-    ui_store01_init_string(ui_store01_Ungroup_Ctrl_orig, 3U, 80U, 650U, 3U, 25U, "Ctrl_orig");
+    ui_store01_init_string(ui_store01_Ungroup_Ctrl_orig, 3U, 80U, 650U, 3U, 25U, " ");
     ui_store01_init_string(ui_store01_Ungroup_Text_Get, 0U, 1698U, 811U, 3U, 30U, "GET");
     ui_store01_init_string(ui_store01_Ungroup_regetflag_text1, 0U, 1520U, 560U, 2U, 20U, "1");
     ui_store01_init_string(ui_store01_Ungroup_regetflag_text2, 0U, 1550U, 560U, 2U, 20U, "2");
     ui_store01_init_string(ui_store01_Ungroup_regetflag_text3, 0U, 1580U, 560U, 2U, 20U, "3");
     ui_store01_init_string(ui_store01_Ungroup_regetflag_text4, 0U, 1610U, 560U, 2U, 20U, "4");
     ui_store01_init_string(ui_store01_Ungroup_Text_REGET, 0U, 1669U, 485U, 3U, 30U, "REGET");
-    ui_store01_init_string(ui_store01_Ungroup_Frowardflag, 3U, 80U, 600U, 3U, 25U, "Chge_Frwd");
-    ui_store01_init_string(ui_store01_Ungroup_forwarddisp, 0U, 320U, 600U, 3U, 25U, "Frwd_disp");
+    ui_store01_init_string(ui_store01_Ungroup_Frowardflag, 3U, 80U, 600U, 3U, 25U, " ");
+    ui_store01_init_string(ui_store01_Ungroup_forwarddisp, 0U, 320U, 600U, 3U, 25U, " ");
     ui_store01_init_string(ui_store01_Ungroup_GET_Mode, 3U, 80U, 550U, 3U, 25U, "GET_mode");
     ui_store01_init_string(ui_store01_Ungroup_get_disp, 0U, 320U, 550U, 3U, 25U, "GET_DISP");
 

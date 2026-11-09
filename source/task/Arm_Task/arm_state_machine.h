@@ -23,7 +23,6 @@ typedef enum {
     Arm_Traj_Mode,                    /**< 轨迹模式 */
     Arm_Rising_Mode,                  /**< 起身模式 */
     Arm_Zero_Mode,                    /**< 零位模式 */
-    Arm_Auto_Mode,                    /**< 自动模式 */
     ARM_FULL_RESET_MODE,              /**< 完全复位模式 */
     ARM_RESET_ZERO_MODE,              /**< 复位归零模式 */
     ARM_START_MODE,                   /**< 启动模式 */

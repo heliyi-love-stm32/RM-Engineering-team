@@ -35,12 +35,9 @@ extern uint8_t yaw_motion;   /**< 偏航角运动标志 */
 extern uint8_t pitch_motion; /**< 俯仰角运动标志 */
 
 /* 机械臂控制处理函数声明 */
-void Arm_Auto_Mode_Handle(void);                   /**< 自动模式处理 */
 void Arm_Traj_Handle(void);                        /**< 轨迹处理 */
-void Arm_Transition_Handle(Joint_t*, const float*);/**< 状态转换处理 */
 void Arm_Frozen_Handle(void);                      /**< 冻结模式处理 */
 void Arm_Custom_Controller_Follow_Handle(void);    /**< 自定义控制器跟随处理 */
-void Arm_Custom_Controller_Reset_Reference(void);  /**< 下次进入跟随模式时重新锁存基准 */
 void ARM_STATRT_UP_HANDLE(void);                   /**< 启动处理 */
 void ARM_RESET_ZERO_HANDLE(void);                  /**< 复位归零处理 */
 void ARM_SAFE_MODE_HANDLE(void);                   /**< 安全模式处理 */

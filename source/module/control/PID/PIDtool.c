@@ -82,7 +82,7 @@ float PID_Calc_Pos(pid_type_def *pid, float now, float target)
     // 更新误差值
     pid->error[2] = pid->error[1];
     pid->error[1] = pid->error[0];
-    pid->error[0] = target - now;
+    pid->error[0] = target - now;// 计算当前误差值
 
     // 计算比例、积分和微分输出
     pid->Pout = pid->Kp * pid->error[0];

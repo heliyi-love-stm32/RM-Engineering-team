@@ -30,7 +30,6 @@ Arm_Task 是工程机器人机械臂控制模块，实现六轴机械臂的运�
 
 ```
 Arm_Task/
-├── arm_config.h              # 关节力矩限制配置
 ├── arm_debug.h               # 调试开关配置
 ├── arm_handle.c/h            # 控制模式处理函数
 ├── arm_state_machine.cpp/h   # 状态机实现
@@ -132,7 +131,6 @@ typedef enum {
     Arm_Traj_Mode,                      // 轨迹模式
     Arm_Rising_Mode,                    // 起身模式
     Arm_Zero_Mode,                      // 零位模式
-    Arm_Auto_Mode,                      // 自动模式
     ARM_FULL_RESET_MODE,                // 完全复位
     ARM_RESET_ZERO_MODE,                // 复位归零
     ARM_START_MODE,                     // 启动模式
@@ -193,7 +191,6 @@ void Joint_Control_Mode_Manager(Joint_t *Joint);
 | `ARM_STATRT_UP_HANDLE()` | 启动模式 | 移动到空闲位置 |
 | `Arm_Custom_Controller_Follow_Handle()` | 控制器跟随 | 解析控制器输入并跟随 |
 | `Arm_Frozen_Handle()` | 冻结模式 | 速度置零，保持位置 |
-| `Arm_Auto_Mode_Handle()` | 自动模式 | 启动自动轨迹定时器 |
 | `ARM_RESET_ZERO_HANDLE()` | 复位归零 | 保存电机零点 |
 | `ARM_SAFE_MODE_HANDLE()` | 安全模式 | 移动到安全位置 |
 | `Arm_Traj_Handle()` | 轨迹模式 | 轨迹执行（待实现） |
@@ -334,28 +331,12 @@ typedef enum {
 
 ### 3.6 配置文件
 
-#### 3.6.1 arm_config.h
-
-定义各关节最大力矩限制：
-
-```c
-#define J1_MAX_TOR 1.0  // 关节1最大力矩 (N·m)
-#define J2_MAX_TOR 1.0  // 关节2最大力矩
-#define J3_MAX_TOR 1.0  // 关节3最大力矩
-#define J4_MAX_TOR 1.0  // 关节4最大力矩
-#define J5_MAX_TOR 1.0  // 关节5最大力矩
-#define J6_MAX_TOR 1.0  // 关节6最大力矩
-```
-
-#### 3.6.2 arm_debug.h
+#### 3.6.1 arm_debug.h
 
 调试开关配置：
 
 ```c
 #define DEBUG_READ_DATA_ONLY 0  // 仅读取数据模式
-#define TRAJ_DEBUG 0            // 轨迹调试模式
-#define SERVO_DEBUG 0           // 舵机调试模式
-#define ARM_CHECK_IN 1          // 自检功能使能
 ```
 
 ---
@@ -470,8 +451,8 @@ while (1) {
 ### 6.2 切换控制模式
 
 ```c
-// 切换到自动模式
-Arm_Current_Control_Mode = Arm_Auto_Mode;
+// 切换到控制器跟随模式
+Arm_Current_Control_Mode = Arm_Custom_Controller_Follow_Mode;
 
 // 切换到安全模式
 Arm_Current_Control_Mode = ARM_SAFE_MODE;
@@ -503,8 +484,6 @@ endEffector_Toggle();
 
 ```c
 #define DEBUG_READ_DATA_ONLY 1  // 仅读取数据，不使能电机
-#define TRAJ_DEBUG 1            // 启用自动轨迹调试
-#define SERVO_DEBUG 1           // 启用舵机调试
 ```
 
 ### 7.2 调试变量

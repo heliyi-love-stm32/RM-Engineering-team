@@ -6,11 +6,9 @@
 
 #include "arm_handle.h"
 #include "arm_state_machine.h"
-#include "auto_get_timer_init.h"
 #include "cmsis_os2.h"
 #include "jointFollowAngle.h"
 #include "motor_DM.h"
-#include "servo_drv.h"
 #include "joint_control_drv.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,9 +26,6 @@ static const float IDLE_POS[6] = {
 static const float IDLE_VEL[6] = {
     0.5, 0.5, 1.0, 0.5, 1.0, 0.5,
 };
-
-/* 零速度常量 */
-static const float Zero_Velocity[6] = {0, 0, 0, 0, 0, 0};
 
 /* 自定义控制器默认速度 */
 static const float Custom_Default_Velocity[6] = {
@@ -191,21 +186,6 @@ void Arm_Traj_Handle(void)
 }
 
 /**
- * @brief 机械臂状态转换处理
- * @param Joint 关节结构体数组指针
- * @param transition_radian 目标过渡弧度数组
- */
-void Arm_Transition_Handle(Joint_t *Joint, const float *transition_radian)
-{
-    if (true == Arm_At_Target(Joint, transition_radian)) {
-        /* 到达目标位置后的处理 */
-        /* Arm_Current_Control_Mode = Arm_IDLE_Mode; */
-    } else {
-        /* 未到达目标，继续运动 */
-    }
-}
-
-/**
  * @brief 机械臂启动处理函数
  * @note 将机械臂移动到空闲位置
  */
@@ -260,19 +240,6 @@ void Arm_Frozen_Handle(void)
 }
 
 /**
- * @brief 自动模式处理函数
- * @note 启动自动轨迹定时器，周期5ms
- */
-void Arm_Auto_Mode_Handle(void)
-{
-    static uint8_t started = 0;
-    if (!started) {
-        osTimerStart(auto_traj_timer_id, 5);
-        started = 1;
-    }
-}
-
-/**
  * @brief 机械臂复位归零处理
  * @note 禁用关节6电机，保存零点位置
  */
@@ -308,5 +275,5 @@ static float ARM_SAFE_MODE_velocity[JOINT_NUM] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
  */
 void ARM_SAFE_MODE_HANDLE(void)
 {
-    Point_Publisher(Target_Point, ARM_SAFE_MODE_radian, ARM_SAFE_MODE_velocity);
+    Point_Publisher(Target_Point, ARM_SAFE_MODE_radian, ARM_SAFE_MODE_velocity);// 发布安全模式目标点
 }

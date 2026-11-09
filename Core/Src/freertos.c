@@ -32,7 +32,6 @@
 // #include "dma.h"
 // #include "usart.h"
 // #include "PIDtool.h"
-#include "auto_get_timer_init.h"
 #include "arm_debug.h"
 /* USER CODE END Includes */
 
@@ -102,44 +101,6 @@ const osThreadAttr_t Remoter_attributes = {
   .stack_size = sizeof(RemoterBuffer),
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for uartTest */
-osThreadId_t uartTestHandle;
-uint32_t uartTestBuffer[512];
-osStaticThreadDef_t uartTestControlBlock;
-const osThreadAttr_t uartTest_attributes = {
-    .name       = "uartTest",
-    .cb_mem     = &uartTestControlBlock,
-    .cb_size    = sizeof(uartTestControlBlock),
-    .stack_mem  = &uartTestBuffer[0],
-    .stack_size = sizeof(uartTestBuffer),
-    .priority   = (osPriority_t)osPriorityNormal,
-};
-/* Definitions for SerialPlot */
-osThreadId_t SerialPlotHandle;
-uint32_t SerialPlotBuffer[512];
-osStaticThreadDef_t SerialPlotControlBlock;
-const osThreadAttr_t SerialPlot_attributes = {
-    .name       = "SerialPlot",
-    .cb_mem     = &SerialPlotControlBlock,
-    .cb_size    = sizeof(SerialPlotControlBlock),
-    .stack_mem  = &SerialPlotBuffer[0],
-    .stack_size = sizeof(SerialPlotBuffer),
-    .priority   = (osPriority_t)osPriorityNormal,
-};
-/* Definitions for motor_test */
-osThreadId_t motorTestHandle;
-uint32_t motorTestBuffer[512];
-osStaticThreadDef_t motorTestControlBlock;
-
-const osThreadAttr_t motorTest_attributes = {
-    .name       = "motorTest",
-    .cb_mem     = &motorTestControlBlock,
-    .cb_size    = sizeof(motorTestControlBlock),
-    .stack_mem  = &motorTestBuffer[0],
-    .stack_size = sizeof(motorTestBuffer),
-    .priority   = (osPriority_t)osPriorityNormal,
-};
-
 /* Definitions for jointFollowAngle */
 
 osThreadId_t jointFollowAngleHandle;
@@ -168,82 +129,20 @@ const osThreadAttr_t jointFollowAngle_attributes = {
      .stack_size = sizeof(Arm_State_Machine_TaskBuffer),
      .priority = (osPriority_t) osPriorityNormal,
  };
- /* Definitions for SerialPort */
- osThreadId_t SerialPortHandle;
- uint32_t SerialPortBuffer[256];
- osStaticThreadDef_t SerialPortControlBlock;
- const osThreadAttr_t SerialPort_attributes = {
-     .name = "SerialPort",
-     .cb_mem = &SerialPortControlBlock,
-     .cb_size = sizeof(SerialPortControlBlock),
-     .stack_mem = &SerialPortBuffer[0],
-     .stack_size = sizeof(SerialPortBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
-uint32_t Chassis_TaskBuffer[512];  // 栈大小：128 * 4字节 = 512字节
-/* 底盘主控制循环：模式选择、行驶及抬升逻辑。 */
-osStaticThreadDef_t Chassis_TaskControlBlock;  // 静态任务控制块
-osThreadId_t Chassis_TaskHandle;  // 任务句柄
-const osThreadAttr_t Chassis_Task_attributes = {
-  .name = "Chassis_Task",        // 任务名称（调试用）
-  .cb_mem = &Chassis_TaskControlBlock,  // 控制块地址（静态创建）
-  .cb_size = sizeof(Chassis_TaskControlBlock),  // 控制块大小
-  .stack_mem = &Chassis_TaskBuffer[0],  // 栈空间地址
-  .stack_size = sizeof(Chassis_TaskBuffer),  // 栈大小
-  .priority = (osPriority_t)osPriorityNormal,  // 优先级（与默认任务相同）
+
+uint32_t Ctrller_TaskBuffer[1024];  // 栈大小：1024 * 4字节 = 4096字节
+/* 自定义控制器数据接收任务。 */
+osStaticThreadDef_t Ctrller_TaskControlBlock;  // 静态任务控制块
+osThreadId_t Ctrller_TaskHandle;  // 任务句柄
+const osThreadAttr_t Ctrller_Task_attributes = {
+  .name = "Ctrller_Task",
+  .cb_mem = &Ctrller_TaskControlBlock,
+  .cb_size = sizeof(Ctrller_TaskControlBlock),
+  .stack_mem = &Ctrller_TaskBuffer[0],
+  .stack_size = sizeof(Ctrller_TaskBuffer),
+  .priority = (osPriority_t)osPriorityNormal,
 };
 
-uint32_t Referee_TaskBuffer[1024];  // 栈大小：1024 * 4字节 = 4096字节
-/* 裁判系统 / 自定义控制器数据处理任务。 */
-osStaticThreadDef_t Referee_TaskControlBlock;  // 静态任务控制块
-osThreadId_t Referee_TaskHandle;  // 任务句柄
-const osThreadAttr_t Referee_Task_attributes = {
-  .name = "Referee_Task",        // 任务名称（调试用）
-  .cb_mem = &Referee_TaskControlBlock,  // 控制块地址（静态创建）
-  .cb_size = sizeof(Referee_TaskControlBlock),  // 控制块大小
-  .stack_mem = &Referee_TaskBuffer[0],  // 栈空间地址
-  .stack_size = sizeof(Referee_TaskBuffer),  // 栈大小
-  .priority = (osPriority_t)osPriorityNormal,  // 优先级（与默认任务相同）
-};
-
-uint32_t Watchdog_TaskBuffer[512];
-/* 健康监测任务：电机、遥控器超时检测及告警。 */
-osStaticThreadDef_t Watchdog_TaskControlBlock;
-osThreadId_t Watchdog_TaskHandle;
-const osThreadAttr_t Watchdog_Task_attributes = {
-  .name = "Watchdog_Task",
-  .cb_mem = &Watchdog_TaskControlBlock,
-  .cb_size = sizeof(Watchdog_TaskControlBlock),
-  .stack_mem = &Watchdog_TaskBuffer[0],
-  .stack_size = sizeof(Watchdog_TaskBuffer),
-  .priority = (osPriority_t)osPriorityLow,
-};
-
-uint32_t IMU_TaskBuffer[512];
-/* 外置 IMU 通信及姿态数据更新任务。 */
-osStaticThreadDef_t IMU_TaskControlBlock;
-osThreadId_t IMU_TaskHandle;
-const osThreadAttr_t IMU_Task_attributes = {
-  .name = "IMU_Task",
-  .cb_mem = &IMU_TaskControlBlock,
-  .cb_size = sizeof(IMU_TaskControlBlock),
-  .stack_mem = &IMU_TaskBuffer[0],
-  .stack_size = sizeof(IMU_TaskBuffer),
-  .priority = (osPriority_t)osPriorityLow,
-};
-
-/* Definitions for uart_Transmit_Angle */
-osThreadId_t uart_Transmit_AngleHandle;
-uint32_t uart_Transmit_AngleBuffer[1024];
-osStaticThreadDef_t uart_Transmit_AngleControlBlock;
-const osThreadAttr_t uart_Transmit_Angle_attributes = {
-    .name       = "uart_Transmit_Angle",
-    .cb_mem     = &uart_Transmit_AngleControlBlock,
-    .cb_size    = sizeof(uart_Transmit_AngleControlBlock),
-    .stack_mem  = &uart_Transmit_AngleBuffer[0],
-    .stack_size = sizeof(uart_Transmit_AngleBuffer),
-    .priority   = (osPriority_t)osPriorityNormal,
-};
 /* Definitions for imuBinarySem01 */
 osSemaphoreId_t imuBinarySem01Handle;
 osStaticSemaphoreDef_t imuBinarySemControlBlock;
@@ -252,15 +151,6 @@ const osSemaphoreAttr_t imuBinarySem01_attributes = {
   .cb_mem = &imuBinarySemControlBlock,
   .cb_size = sizeof(imuBinarySemControlBlock),
 };
-/* Definitions for controlBinaryIMU */
-osSemaphoreId_t controlBinaryIMUHandle;
-osStaticSemaphoreDef_t controlBinaryIMUControlBlock;
-const osSemaphoreAttr_t controlBinaryIMU_attributes = {
-  .name = "controlBinaryIMU",
-  .cb_mem = &controlBinaryIMUControlBlock,
-  .cb_size = sizeof(controlBinaryIMUControlBlock),
-};
-
  /* Definitions for Trajectory_Publisher */
  osThreadId_t Trajectory_PublisherHandle;
  uint32_t Trajectory_PublisherBuffer[256];
@@ -286,56 +176,6 @@ const osSemaphoreAttr_t controlBinaryIMU_attributes = {
 //      .priority = (osPriority_t) osPriorityNormal,// 优先级（与默认任务相同）
 //  };
 
- /* Definitions for View_Gimbal_Task */
- /* 视觉云台 / 舵机控制任务。 */
- osThreadId_t View_Gimbal_TaskHandle;
- uint32_t View_Gimbal_TaskBuffer[128];
- osStaticThreadDef_t View_Gimbal_TaskControlBlock;
- const osThreadAttr_t View_Gimbal_Task_attributes = {
-     .name = "View_Gimbal_Task",
-     .cb_mem = &View_Gimbal_TaskControlBlock,
-     .cb_size = sizeof(View_Gimbal_TaskControlBlock),
-     .stack_mem = &View_Gimbal_TaskBuffer[0],
-     .stack_size = sizeof(View_Gimbal_TaskBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
- /* Definitions for vofa */
- osThreadId_t vofaHandle;
- uint32_t vofaBuffer[512];
- osStaticThreadDef_t vofaControlBlock;
- const osThreadAttr_t vofa_attributes = {
-     .name = "vofa",
-     .cb_mem = &vofaControlBlock,
-     .cb_size = sizeof(vofaControlBlock),
-     .stack_mem = &vofaBuffer[0],
-     .stack_size = sizeof(vofaBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
-/* Definitions for debug_msg */
- osThreadId_t debug_msgHandle;
- uint32_t debug_msgBuffer[256];
- osStaticThreadDef_t debug_msgControlBlock;
- const osThreadAttr_t debug_msg_attributes = {
-     .name = "debug_msg",
-     .cb_mem = &debug_msgControlBlock,
-     .cb_size = sizeof(debug_msgControlBlock),
-     .stack_mem = &debug_msgBuffer[0],
-     .stack_size = sizeof(debug_msgBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
- /* Definitions for auto_get_task */
- /* 自动取矿轨迹 / 控制任务。 */
- osThreadId_t auto_get_taskHandle;
- uint32_t auto_get_taskBuffer[128];
- osStaticThreadDef_t auto_get_taskControlBlock;
- const osThreadAttr_t auto_get_task_attributes = {
-     .name = "auto_get_task",
-     .cb_mem = &auto_get_taskControlBlock,
-     .cb_size = sizeof(auto_get_taskControlBlock),
-     .stack_mem = &auto_get_taskBuffer[0],
-     .stack_size = sizeof(auto_get_taskBuffer),
-     .priority = (osPriority_t) osPriorityNormal,
- };
  /* Definitions for Arm_Reset */
  /* 机械臂回零 / 复位任务。 */
  osThreadId_t Arm_ResetHandle;
@@ -352,30 +192,14 @@ const osSemaphoreAttr_t controlBinaryIMU_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-void uart_test(void *argument);
-void motor_test(void *arguments);
 void jointFollowAngle(void *arguments);
-void uart_Transmit_Angle(void *arguments);
-void Chassis_Task(void *arguments);
-void Referee_Task(void *arguments);
-void Watchdog_Task(void *arguments);
-void SerialPlot(void *argument);
-void IMU_Task(void *argument);
-// void test_CAN3_ARM(void *argument);
+void Ctrller_Task(void *arguments);
 void arm_reset_task(void *argument);
 /* USER CODE END FunctionPrototypes */
 
-/* USER CODE END FunctionPrototypes */
-
-void auto_get_task(void *argument);
-void debug_msg_task(void *argument);
-void View_Gimbal_Task(void *argument);
 void StartDefaultTask(void *argument);
 void IMU_TempCtrlTask(void *argument);
 void Remoter_Task(void *argument);
-void Trajectory_Publisher_Task(void *argument) ;
-
-void vofa_send(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
@@ -389,8 +213,6 @@ void MX_FREERTOS_Init(void) {
    * 依赖 RTOS 对象的初始化放在这里，周期性控制逻辑放在对应任务中。
    */
   /* USER CODE BEGIN Init */
-  /* 初始化自动轨迹子系统使用的定时器。 */
-  traj_timer_init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -401,10 +223,6 @@ void MX_FREERTOS_Init(void) {
   /* creation of imuBinarySem01 */
   /* IMU 相关生产者 / 消费者同步用的事件型信号量。 */
   imuBinarySem01Handle = osSemaphoreNew(1, 0, &imuBinarySem01_attributes);
-
-  /* creation of controlBinaryIMU */
-  /* 协调 IMU 控制与数据处理的信号量。 */
-  controlBinaryIMUHandle = osSemaphoreNew(1, 0, &controlBinaryIMU_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -420,51 +238,28 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /*
-   * 当前启用的任务集合。
-   * 被注释的 osThreadNew() 是可选测试或调试任务，不会在当前固件中创建线程。
+   * 当前启用的机械臂任务与所需基础服务。
    */
   /* creation of defaultTask */
   /* 空闲占位任务；必须主动让出 CPU，保证控制任务正常运行。 */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of IMU_TempCtrl */
-  IMU_TempCtrlHandle = osThreadNew(IMU_TempCtrlTask, NULL, &IMU_TempCtrl_attributes);
+  //IMU_TempCtrlHandle = osThreadNew(IMU_TempCtrlTask, NULL, &IMU_TempCtrl_attributes);
 
   /* creation of Remoter */
-  RemoterHandle = osThreadNew(Remoter_Task, NULL, &Remoter_attributes);
+  //RemoterHandle = osThreadNew(Remoter_Task, NULL, &Remoter_attributes);
 
   
-  // uartTestHandle = osThreadNew(uart_test, NULL, &uartTest_attributes);
-  // motorTestHandle = osThreadNew(motor_test, NULL,&motorTest_attributes);
   /* 六轴机械臂关节跟随与末端执行器控制循环。 */
   jointFollowAngleHandle = osThreadNew(jointFollowAngle,NULL, &jointFollowAngle_attributes);
-  // debug_msgHandle = osThreadNew(debug_msg_task, NULL, &debug_msg_attributes);
-  /* 自动取矿行为任务。 */
-  auto_get_taskHandle = osThreadNew(auto_get_task, NULL, &auto_get_task_attributes);
-  // vofaHandle = osThreadNew(vofa_send, NULL, &vofa_attributes);
-  //uart_Transmit_AngleHandle = osThreadNew(uart_Transmit_Angle, NULL, &uart_Transmit_Angle_attributes);
-  /* 底盘驱动、模式切换与抬升状态机。 */
-  Chassis_TaskHandle = osThreadNew(Chassis_Task, NULL, &Chassis_Task_attributes);
-  // SerialPortHandle = osThreadNew(SerialPlot, NULL, &SerialPort_attributes);
-  /* 自定义控制器 / 裁判系统输入处理。 */
-  Referee_TaskHandle = osThreadNew(Referee_Task, NULL, &Referee_Task_attributes);
-  /* 获取并发布外置 IMU 数据。 */
-  IMU_TaskHandle = osThreadNew(IMU_Task, NULL, &IMU_Task_attributes);
-  // Trajectory_PublisherHandle = osThreadNew(Trajectory_Publisher_Task, NULL, &Trajectory_Publisher_attributes);
-  /* 视觉云台舵机控制循环。 */
-  View_Gimbal_TaskHandle = osThreadNew(View_Gimbal_Task, NULL, &View_Gimbal_Task_attributes);
+  /* 自定义控制器数据接收。 */
+  Ctrller_TaskHandle = osThreadNew(Ctrller_Task, NULL, &Ctrller_Task_attributes);
 
   /* 机械臂复位 / 回零流程。 */
 #if !DEBUG_READ_DATA_ONLY
   Arm_ResetHandle = osThreadNew(arm_reset_task, NULL, &Arm_Reset_attributes);
 #endif
-
-  // SerialPlotHandle = osThreadNew(SerialPlot, NULL, &SerialPlot_attributes);
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* 最后启动看门狗，使其监测前面已创建的任务和设备。 */
-  Watchdog_TaskHandle = osThreadNew(Watchdog_Task, NULL, &Watchdog_Task_attributes);
-  /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -540,20 +335,6 @@ __weak void Remoter_Task(void *argument)
  * 不应在这里编写正式业务逻辑，否则可能被同名强符号静默覆盖。
  */
 
-__weak void uart_test(void *argument)
-{
-  UNUSED(argument);
-  for (;;) {
-    osDelay(1);
-  }
-}
-__weak void motor_test(void *argument)
-{
-  UNUSED(argument);
-  for (;;) {
-    osDelay(1);
-  }
-}
 __weak void jointFollowAngle(void *argument)
 {
   UNUSED(argument);
@@ -561,28 +342,7 @@ __weak void jointFollowAngle(void *argument)
     osDelay(1);
   }
 }
-__weak void uart_Transmit_Angle(void *argument)
-{
-  UNUSED(argument);
-  for (;;) {
-    osDelay(1);
-  }
-}
-
-__weak void Chassis_Task(void *argument)
-{
-  /* USER CODE Chassis_Task */
-  UNUSED(argument);
-  /* Infinite loop */
-  for(;;)
-  {
-  
-    osDelay(2);
-  }
-  /* USER CODE END Chassis_Task */
-}
-
-__weak void Referee_Task(void *argument)
+__weak void Ctrller_Task(void *argument)
 {
   UNUSED(argument);
   for(;;)
@@ -592,39 +352,4 @@ __weak void Referee_Task(void *argument)
   }
 }
 
-__weak void SerialPort(void *argument)
-{
-  UNUSED(argument);
-  for(;;)
-  {
-    
-    osDelay(1);
-  }
-}
-
-__weak void Trajectory_Publisher_Task (void *argument){
-  UNUSED(argument);
-  for(;;){
-    osDelay(1);
-  }
-}
-
-__weak void IMU_Task(void *argument)
-{
-  UNUSED(argument);
-  for(;;){
-    osDelay(1);
-  }
-}
 /* USER CODE END Application */
-
-
-__weak void SerialPlot(void *argument)
-{
-  UNUSED(argument);
-  for(;;)
-  {
-    
-    osDelay(1);
-  }
-}

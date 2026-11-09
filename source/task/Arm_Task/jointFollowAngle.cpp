@@ -13,7 +13,6 @@ extern "C" {
 #include "ee_control_drv.h"
 #include "joint_control_drv.h"
 #include "motor_DM.h"
-#include "auto_keyboard.h"
 }
 
 /* 外部变量声明 */
@@ -30,11 +29,11 @@ void target_point_init(target_point_t *Target_Point) {
     for (int joint_index = 0; joint_index < JOINT_NUM; joint_index++) {
         /* 关节3设置特殊初始位置 */
         if (joint_index == 2) {
-            Target_Point[joint_index].target_joint_radian = 0.2f;
+            Target_Point[joint_index].target_joint_radian = 0.2f;// 关节3初始位置0.2/3.14*360°=22.918°
         } else {
-            Target_Point[joint_index].target_joint_radian = 0;
+            Target_Point[joint_index].target_joint_radian = 0;// 其他关节初始位置0/3.14*360°=0°
         }
-        Target_Point[joint_index].velocity = JOINT_DEFAULT_VELOCITY;
+        Target_Point[joint_index].velocity = JOINT_DEFAULT_VELOCITY;// 关节默认速度
     }
 }
 
@@ -61,58 +60,11 @@ void Joint_Get_Radian(Joint_t Joint[], float rad[]) {
     }
 }
 
-/**
- * @brief 调试用目标点设置函数
- * @note 手动设置各关节的目标位置和速度，用于调试
- */
-void Debug_set_Point(void) {
-    /* 设置各关节目标弧度 (单位: rad) */
-    Target_Point[0].target_joint_radian = 2.28;
-    Target_Point[1].target_joint_radian = 0.34;
-    Target_Point[2].target_joint_radian = 0.6;
-    Target_Point[3].target_joint_radian = 0;
-    Target_Point[4].target_joint_radian = 0.2;
-    Target_Point[5].target_joint_radian = 0;
-
-    /* 设置各关节运动速度 (单位: rad/s) */
-    Target_Point[0].velocity = 0.5f;
-    Target_Point[1].velocity = 0.5f;
-    Target_Point[2].velocity = 0.5f;
-    Target_Point[3].velocity = 0.5f;
-    Target_Point[4].velocity = 0.5f;
-    Target_Point[5].velocity = 0.5f;
-}
-
 /* 末端执行器实例 */
 endEffector_t EndEffector;
 
 /* 关节数组 */
 Joint_t Joint[JOINT_NUM];
-
-/**
- * @brief 上升沿检测器结构体
- */
-typedef struct {
-    uint8_t last;    /**< 上一次状态 */
-    uint8_t rising;  /**< 上升沿标志 */
-} rising_detector_t;
-
-/**
- * @brief 更新上升沿检测器
- * @param detector 检测器结构体指针
- * @param rc_info 遥控器信息结构体指针
- */
-static inline void rising_detector_update(rising_detector_t *detector,
-                                          const rc_info_t *rc_info) {
-    uint8_t current = rc_info->sw1;
-
-    /* 检测上升沿: 上次不为1且当前为1 */
-    detector->rising = (detector->last != 1) && (current == 1);
-    detector->last = current;
-}
-
-/* 遥控器上升沿检测器实例 */
-static rising_detector_t rc_rising_detector = {0};
 
 /**
  * @brief 机械臂主控制任务 (1kHz周期)
@@ -121,7 +73,6 @@ static rising_detector_t rc_rising_detector = {0};
  *          1. 初始化关节和末端执行器
  *          2. 使能所有电机
  *          3. 循环执行:
- *             - 检测遥控器自检触发
  *             - 驱动关节运动
  *             - 刷新电机状态
  *             - 更新夹爪状态机
@@ -131,13 +82,13 @@ void jointFollowAngle(void *argument) {
     UNUSED(argument);
 
     /* 初始化关节 */
-    joint_init(Joint);
+    joint_init(Joint);// 初始化关节结构体数组
 
     /* 初始化目标点 */
-    target_point_init(Target_Point);
+    target_point_init(Target_Point);//初始化各关节初始位置角度
 
     /* 初始化末端执行器 */
-    endEffector_init(&EndEffector);
+    endEffector_init(&EndEffector);// 初始化末端执行器结构体
 
     /* 等待系统稳定 */
     osDelay(100);
@@ -155,18 +106,9 @@ void jointFollowAngle(void *argument) {
 
     /* 主控制循环 */
     while (1) {
-        /* 自检功能 (由配置宏控制) */
-#if ARM_CHECK_IN
-        rising_detector_update(&rc_rising_detector, &remoter);
-        if (rc_rising_detector.rising) {
-            Arm_Current_Control_Mode = Arm_Auto_Mode;  /**< 切换到自动模式 */
-            auto_key_cmd_exec(CMD_AUTO_CHECKIN);       /**< 执行自检命令 */
-        }
-#endif
-
         /* 只读模式不发送位置控制帧 */
     #if !DEBUG_READ_DATA_ONLY
-        Joint_Move(Joint, Target_Point);
+        Joint_Move(Joint, Target_Point);  // 发送关节目标位置控制帧
     #endif
 
         /* 刷新关节电机状态 */
@@ -180,7 +122,7 @@ void jointFollowAngle(void *argument) {
 
         /* 只读模式不执行夹爪控制 */
     #if !DEBUG_READ_DATA_ONLY
-        gripperSM.update(&EndEffector);
+        gripperSM.update(&EndEffector);  // 更新夹爪状态机
     #endif
 
         /* 执行机械臂控制模式管理 */
