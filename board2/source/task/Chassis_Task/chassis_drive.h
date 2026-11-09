@@ -1,0 +1,143 @@
+#ifndef CHASSIS_DRIVE_H
+#define CHASSIS_DRIVE_H
+
+/**
+ * @file chassis_drive.h
+ * @brief Public interfaces for planar chassis motion and four-wheel actuation.
+ *
+ * Call a mode function once per chassis-task period after initialization.  A
+ * non-null DBUS or keyboard pointer supplies the current operator command;
+ * preset-motion functions provide autonomous translation while retaining yaw.
+ */
+
+#include "chassis_config.h"
+
+#include <stdint.h>
+
+#include "DBusSys.h"
+#include "LPF.h"
+#include "PIDtool.h"
+#include "arm_math_types.h"
+#include "motor_DJI.h"
+
+/**
+ * @brief 初始化底盘轮系控制模块
+ *
+ * 初始化内容包括：电机句柄、PID、低通滤波器等。
+ */
+void Chassis_Drive_Init(void);
+
+/**
+ * @brief 关闭底盘轮电机输出（轮子停转）
+ */
+void Chassis_Stop(void);
+
+/**
+ * @brief 设置前轮输出旁路
+ *
+ * enable = 1 时，左前/右前轮发送值强制为 0，
+ * 且这两个轮子不参与底盘功率估算与缩放。
+ */
+void Chassis_SetFrontWheelsOutputBypass(uint8_t enable);
+
+/**
+ * @brief 底盘普通模式控制
+ *
+ * @param remoter 遥控器数据指针
+ */
+void Chassis_Normal_Mode(const rc_info_t *remoter);
+
+/**
+ * @brief 底盘普通平移 + yaw 开环控制
+ *
+ * 用于底盘处在 Rising 总模式及其子模式时，避免再走 IMU yaw 闭环。
+ */
+void Chassis_Normal_Mode_OpenLoopYaw(const rc_info_t *remoter);
+
+/**
+ * @brief 底盘上台阶模式控制
+ *
+ * @param remoter 遥控器数据指针
+ */
+void Chassis_Upstairs_Mode(const rc_info_t *remoter);
+
+/**
+ * @brief 键盘控制底盘（WASD 平移 + mouse_x 修改目标 yaw）
+ *
+ * @param kb 键盘/鼠标数据
+ * @param disable_yaw 为 1 时禁止 mouse_x 修改目标 yaw，但仍保持 yaw 闭环
+ */
+void Chassis_Keyboard_Mode(const keyboard_t *kb, uint8_t disable_yaw);
+
+/**
+ * @brief 键盘控制底盘（WASD 平移 + mouse_x 直接给 yaw 开环）
+ */
+void Chassis_Keyboard_Mode_OpenLoopYaw(const keyboard_t *kb, uint8_t enable_yaw);
+
+/**
+ * @brief 键盘源下按给定平移速度运行，同时 mouse_x 直接给 yaw 开环
+ */
+void Chassis_Keyboard_PresetMotion_OpenLoopYaw(const keyboard_t *kb,
+                                               float32_t motion_x,
+                                               float32_t motion_y,
+                                               uint8_t enable_yaw);
+
+/** @brief Drive a preset translation while keeping IMU yaw closed-loop enabled. */
+void Chassis_Keyboard_PresetMotion_ClosedLoopYaw(const keyboard_t *kb,
+                                                 float32_t motion_x,
+                                                 float32_t motion_y,
+                                                 uint8_t disable_yaw);
+
+/**
+ * @brief 初始化底盘轮电机（DJI 3508）
+ *
+ * 配置CAN相关参数并启动电机收发。
+ *
+ * @param Chassis_Motor 指向DJI电机结构体指针的指针（需要指向有效内存）
+ */
+void Chassis_Wheel_Init_DJI(DJI_motor_t **Chassis_Motor);
+
+/**
+ * @brief 初始化底盘轮速度PID
+ *
+ * @param pid PID数组（长度为4）
+ */
+void Chassis_3508_PID_Init(pid_type_def pid[]);
+
+/**
+ * @brief 计算底盘轮速度PID输出并进行低通滤波
+ *
+ * @param pid PID数组（长度为4）
+ * @param target_speed 目标轮速数组（长度为4）
+ * @param motor 电机反馈结构体
+ * @param output 电流输出数组（长度为4）
+ * @param lpf 低通滤波器数组（长度为4）
+ */
+void Chassis_3508_PID_Calculate(pid_type_def pid[], float32_t target_speed[],
+                               DJI_motor_t *motor, int16_t output[], LowPassFilter lpf[]);
+
+/**
+ * @brief 遥控器通道映射为底盘运动速度，并通过 IMU yaw 闭环得到角速度后解算四轮目标转速
+ *
+ * @param Target_Velocity 目标轮速数组（长度为4）
+ * @param remoter 遥控器数据
+ */
+void Chassis_Motor_TargetVelocity(float32_t Target_Velocity[], rc_info_t remoter);
+
+/**
+ * @brief 发送底盘轮电机控制输出
+ *
+ * @param DJMotor DJI电机句柄
+ * @param output 电流输出数组（长度为4）
+ */
+void Chassis_Motor_SendControl_DJI(DJI_motor_t *DJMotor, int16_t output[]);
+
+/**
+ * @brief 初始化底盘轮速度低通滤波器
+ *
+ * @param lpf 低通滤波器数组（长度为4）
+ * @param alpha 低通滤波系数
+ */
+void Chassis_Wheel_LPF_Init(LowPassFilter lpf[4], float alpha);
+
+#endif /* CHASSIS_DRIVE_H */

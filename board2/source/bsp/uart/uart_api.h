@@ -1,0 +1,49 @@
+#ifndef __UART_API_H__
+#define __UART_API_H__
+
+#include "main.h"
+
+typedef struct
+{
+    UART_HandleTypeDef *huart;
+    uint8_t *pBuffer;
+    uint16_t Len;
+}uart_msg_t;
+
+typedef struct
+{
+    uart_msg_t *rx_msg;
+    uint32_t count; //接收计数
+    uint16_t time; //超时时间
+}uart_rx_t;
+
+typedef enum
+{
+    UART_OK = 0,
+    UART_ERROR,
+    UART_TIMEOUT
+}uart_status_t;
+
+extern uart_rx_t* uart5_msg;
+extern uart_rx_t* uart7_msg;
+extern uart_rx_t* uart1_msg;
+extern uart_rx_t* uart2_msg;
+extern uart_rx_t* uart3_msg;
+extern uart_rx_t* uart10_msg;
+
+extern void (*uart5_rx_hook)(uint8_t *pData, uint32_t size);
+extern void (*uart7_rx_hook)(uint8_t *pData, uint32_t size);
+extern void (*uart1_rx_hook)(uint8_t *pData, uint32_t size);
+extern void (*uart2_rx_hook)(uint8_t *pData, uint32_t size);
+extern void (*uart3_rx_hook)(uint8_t *pData, uint32_t size);
+extern void (*uart10_rx_hook)(uint8_t *pData, uint32_t size);
+
+uart_status_t uart_rx_cheak(uart_rx_t *uart_rx_msg);
+uart_status_t uart_msg_cheak(uart_msg_t *rx_msg);
+uart_status_t uart_rx_init(uart_rx_t* uart_rx_msg);
+
+uart_status_t uart_reg_cheak(uart_rx_t *uart_rx_msg);
+uart_status_t uart_tx_send_IT(uart_msg_t *uart_msg);
+uart_status_t  uart_tx_send(uart_msg_t* uart_msg,uint32_t timeout);
+uart_status_t uart_rx_hook_reg(uart_rx_t *uart_rx_msg, void (*hook)(uint8_t *pData, uint32_t size));
+#endif /* __UART_API_H__ */

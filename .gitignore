@@ -1,90 +1,11 @@
-
-# Prerequisites
-*.d
-
-# Object files
-*.o
-*.ko
-*.obj
+# Build outputs are local to each independently buildable board project.
+**/build/
+**/compile_commands.json
 *.elf
-
-# Linker output
-*.ilk
+*.bin
+*.hex
 *.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-build
-./idea
-.vscode/.cortex-debug.peripherals.state.json
-.vscode/.cortex-debug.registers.state.json
-.vscode/settings.json
-.vscode/c_cpp_properties.json
-.mxproject
-*.jdebug*
-RMtextH7.ioc
-
-# code coverage
-Core\Src\freertos.c
-Core\Src\main.c
-source\task
-
-# vscode settings
-.clangd
-.settings
+*.d
+*.o
 .vscode/
-
-# .cache\
-.cache
-run.sh
-
-#script
-sh/
-*.sh
-*.jlink
-
-#ai_tools
-ai
-
-#.envrc
-.envrc
-
-# build_files
-compile_commands.json
-
-.nvim.lua
-
+.cache/
