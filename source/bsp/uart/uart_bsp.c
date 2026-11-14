@@ -13,23 +13,30 @@
  */
 static uint8_t uart7_rx_shadow[512];
 static uint8_t uart1_rx_shadow[512];
+/* UART5可选SBUS：容量固定，避免按本次长度翻倍重启接收造成缓冲越界。 */
+static uint8_t uart5_rx_shadow[256];
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
 	switch ((unsigned long)huart->Instance)
 	{
 	case (unsigned long)UART5_BASE:
-		uart_rx_cheak(uart5_msg);
-		uart5_msg->rx_msg->Len = Size;
-		HAL_UARTEx_ReceiveToIdle_IT(uart5_msg->rx_msg->huart, uart5_msg->rx_msg->pBuffer, uart5_msg->rx_msg->Len * 2);
+	{
+		if (uart_rx_cheak(uart5_msg) != UART_OK) break;
+		uint16_t copy_size = Size;
+		if (copy_size > uart5_msg->rx_msg->Len) copy_size = uart5_msg->rx_msg->Len;
+		if (copy_size > sizeof(uart5_rx_shadow)) copy_size = sizeof(uart5_rx_shadow);
+		memcpy(uart5_rx_shadow, uart5_msg->rx_msg->pBuffer, copy_size);
+		HAL_UARTEx_ReceiveToIdle_IT(uart5_msg->rx_msg->huart, uart5_msg->rx_msg->pBuffer, uart5_msg->rx_msg->Len);
 		uart5_msg->count++;
 		uart5_msg->time = 0;
 		if (uart5_rx_hook != NULL)
 		{
-			uart5_rx_hook(uart5_msg->rx_msg->pBuffer, Size); // 添加钩子函数调用
+			uart5_rx_hook(uart5_rx_shadow, copy_size);
 		}
 
 		break;
+	}
 	case (unsigned long)UART7_BASE:
 	{
 		uint16_t copy_size = Size;
@@ -115,8 +122,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 	switch ((unsigned long)huart->Instance)
 	{
 	case (unsigned long)UART5_BASE:
-		uart_rx_cheak(uart5_msg);
-		HAL_UARTEx_ReceiveToIdle_IT(uart5_msg->rx_msg->huart, uart5_msg->rx_msg->pBuffer, uart5_msg->rx_msg->Len * 2);
+		if (uart_rx_cheak(uart5_msg) != UART_OK) break;
+		HAL_UARTEx_ReceiveToIdle_IT(uart5_msg->rx_msg->huart, uart5_msg->rx_msg->pBuffer, uart5_msg->rx_msg->Len);
 		break;
 	case (unsigned long)UART7_BASE:
 		uart_rx_cheak(uart7_msg);

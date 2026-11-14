@@ -64,6 +64,11 @@ typedef struct
 	uint16_t last_cmd_id;
 	uint16_t last_frame_length;
 	uint8_t last_robot_id;
+	/* 关键安全消息必须分别续命；普通比赛帧不能使旧热量/供电数据保持在线。 */
+	uint32_t robot_state_count;
+	uint32_t robot_state_last_ms;
+	uint32_t power_heat_count;
+	uint32_t power_heat_last_ms;
 } referee_link_debug_t;
 
 void JudgeReadData(uint8_t *buff);

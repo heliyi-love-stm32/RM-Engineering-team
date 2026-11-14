@@ -86,9 +86,21 @@ can_status_t can_msg_add_item(can_msg_t *msg)
     if (msg == NULL)
         return CAN_MSG_ERROR;  // 如果消息指针为空，返回错误状态
 
-    // 检查消息是否已经存在于对应的CAN消息列表中
-    if (can_msg_find_item(can_msg_find_list(msg->port), msg->id) != NULL)
-        return CAN_MSG_REPEAT;  // 如果消息已存在，返回重复添加的消息状态
+    if (msg->port > CAN3_PORT)
+        return CAN_PORT_ERROR;
+
+    uint32_t irq_state = __get_PRIMASK();
+    __disable_irq();
+    List_t *list = can_msg_find_list((can_port_t)msg->port);
+    uint8_t repeated = (can_msg_find_item(list, msg->id) != NULL);
+    __set_PRIMASK(irq_state);
+    if (repeated)
+        return CAN_MSG_REPEAT;
+
+    /* 此API仅允许任务/启动阶段调用，不能在ISR内分配内存。
+     * 先在临界区外分配，避免 malloc/free 时长时间关闭中断。
+     * PRIMASK保存/恢复原状态，因此 osKernelStart() 前也能安全使用。
+     */
 
     // 分配内存为新的ListItem_t结构
     ListItem_t *can_item = pvPortMalloc(sizeof(ListItem_t));
@@ -100,21 +112,17 @@ can_status_t can_msg_add_item(can_msg_t *msg)
     listSET_LIST_ITEM_VALUE(can_item, msg->id); // 设置ListItem_t项的值为消息ID
     listSET_LIST_ITEM_OWNER(can_item, msg);     // 设置ListItem_t项的所有者为消息结构指针
 
-    switch (msg->port)
-    {
-    case CAN1_PORT:
-        vListInsert(&can1_rx_msg_list, can_item);  // 将新项插入到CAN1接收消息列表中
-        break;
-    case CAN2_PORT:
-        vListInsert(&can2_rx_msg_list, can_item);  // 将新项插入到CAN2接收消息列表中
-        break;
-    case CAN3_PORT:
-        vListInsert(&can3_rx_msg_list, can_item);  // 将新项插入到CAN3接收消息列表中
-        break;
-    default:
-        vPortFree(can_item);  // 如果端口未知，释放已分配的内存
-        return CAN_PORT_ERROR;  // 返回端口错误状态
+    irq_state = __get_PRIMASK();
+    __disable_irq();
+    /* 分配内存期间另一个任务可能已经注册同ID，必须在插入前再检查。 */
+    if (can_msg_find_item(list, msg->id) != NULL) {
+        __set_PRIMASK(irq_state);
+        vPortFree(can_item);
+        return CAN_MSG_REPEAT;
     }
+    vListInsert(list, can_item);
+    __DMB();
+    __set_PRIMASK(irq_state);
     return CAN_OK;  // 成功添加消息项，返回OK状态
 }
 
@@ -130,6 +138,14 @@ can_status_t can_msg_add_item(can_msg_t *msg)
  */
 can_status_t can_msg_del_item(can_port_t port, uint32_t id)
 {
+    if ((uint32_t)port > CAN3_PORT)
+        return CAN_PORT_ERROR;
+
+    /* 只将遍历/摘链放在短临界区内，确保CAN ISR不会访问半更新的链表。
+     * 摘链后再恢复中断并释放节点；消息对象的生命周期由调用者管理。
+     */
+    uint32_t irq_state = __get_PRIMASK();
+    __disable_irq();
     ListItem_t *item = listGET_HEAD_ENTRY(can_msg_find_list(port));  // 获取对应端口的列表头项
     const ListItem_t *end = listGET_END_MARKER(can_msg_find_list(port));  // 获取对应端口的列表结束标记
     while (item != end)
@@ -138,11 +154,14 @@ can_status_t can_msg_del_item(can_port_t port, uint32_t id)
         if (msg->id == id)
         {
             uxListRemove(item);  // 从列表中移除该项
+            __DMB();
+            __set_PRIMASK(irq_state);
             vPortFree(item);     // 释放ListItem_t项所占用的内存
             return CAN_OK;       // 成功删除消息项，返回OK状态
         }
         item = listGET_NEXT(item);  // 移动到下一项
     }
+    __set_PRIMASK(irq_state);
     return CAN_MSG_NOT_FOUND;  // 未找到匹配消息项，返回消息未找到状态
 }
 
@@ -156,24 +175,20 @@ can_status_t can_msg_del_item(can_port_t port, uint32_t id)
  */
 can_status_t can_msg_send_classical(can_msg_t *msg)
 {
-    if (msg == NULL)
+    if ((msg == NULL) || (msg->id > 0x7FFU) || (msg->len > 8U))
         return CAN_MSG_ERROR;  // 如果消息指针为空，返回错误状态
 
     switch (msg->port)
     {
     case CAN1_PORT:
-        fdcanx_send_data(&hfdcan1, msg->id, msg->data, msg->len);  // 使用fdcanx_send_data发送CAN1端口的消息
-        break;
+        return (fdcanx_send_data(&hfdcan1, msg->id, msg->data, msg->len) == 0U) ? CAN_OK : CAN_MSG_ERROR;
     case CAN2_PORT:
-        fdcanx_send_data(&hfdcan2, msg->id, msg->data, msg->len);  // 使用fdcanx_send_data发送CAN2端口的消息
-        break;
+        return (fdcanx_send_data(&hfdcan2, msg->id, msg->data, msg->len) == 0U) ? CAN_OK : CAN_MSG_ERROR;
     case CAN3_PORT:
-        fdcanx_send_data(&hfdcan3, msg->id, msg->data, msg->len);  // 使用fdcanx_send_data发送CAN3端口的消息
-        break;
+        return (fdcanx_send_data(&hfdcan3, msg->id, msg->data, msg->len) == 0U) ? CAN_OK : CAN_MSG_ERROR;
     default:
         return CAN_PORT_ERROR;  // 如果端口未知，返回端口错误状态
     }    
-    return CAN_OK;  // 成功发送消息，返回OK状态
 }
 
 /**

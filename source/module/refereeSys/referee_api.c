@@ -444,11 +444,18 @@ static void referee_parse_frame(uint8_t *buff, uint16_t len)
 		referee_copy_payload(&referee_info.SupplyProjectileAction, sizeof(referee_info.SupplyProjectileAction), buff + DATA_Offset, payload_len);
 		break;
 	case ID_game_robot_state:
+		/* 协议长度不匹配时保留既有值但不续命，新增发射安全门会超时闭锁。 */
+		if (payload_len != sizeof(referee_info.GameRobotState)) break;
 		referee_copy_payload(&referee_info.GameRobotState, sizeof(referee_info.GameRobotState), buff + DATA_Offset, payload_len);
 		g_referee_link_debug.last_robot_id = referee_info.GameRobotState.robot_id;
+		g_referee_link_debug.robot_state_last_ms = HAL_GetTick();
+		g_referee_link_debug.robot_state_count++;
 		break;
 	case ID_power_heat_data:
+		if (payload_len != sizeof(referee_info.PowerHeatData)) break;
 		referee_copy_payload(&referee_info.PowerHeatData, sizeof(referee_info.PowerHeatData), buff + DATA_Offset, payload_len);
+		g_referee_link_debug.power_heat_last_ms = HAL_GetTick();
+		g_referee_link_debug.power_heat_count++;
 		break;
 	case ID_game_robot_pos:
 		referee_copy_payload(&referee_info.GameRobotPos, sizeof(referee_info.GameRobotPos), buff + DATA_Offset, payload_len);

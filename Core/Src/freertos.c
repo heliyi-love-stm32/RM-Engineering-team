@@ -33,6 +33,7 @@
 // #include "usart.h"
 // #include "PIDtool.h"
 #include "arm_debug.h"
+#include "heavy_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,6 +68,18 @@ typedef StaticSemaphore_t osStaticSemaphoreDef_t;
  * Buffer、ControlBlock 和 attributes 三部分定义。
  */
 /* USER CODE BEGIN Variables */
+/* 新增头部任务，独立静态栈/控制块；原机械臂、夹爪、控制器、回零任务原样保留。 */
+static uint32_t HeavyControlBuffer[1024];
+static osStaticThreadDef_t HeavyControlControlBlock;
+static osThreadId_t HeavyControlHandle;
+static const osThreadAttr_t HeavyControl_attributes = {
+  .name = "HeavyControl",
+  .cb_mem = &HeavyControlControlBlock,
+  .cb_size = sizeof(HeavyControlControlBlock),
+  .stack_mem = HeavyControlBuffer,
+  .stack_size = sizeof(HeavyControlBuffer),
+  .priority = (osPriority_t)osPriorityNormal,
+};
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -262,6 +275,8 @@ void MX_FREERTOS_Init(void) {
 #endif
 
   /* USER CODE BEGIN RTOS_EVENTS */
+  HeavyControlHandle = osThreadNew(HeavyControl_Task, NULL, &HeavyControl_attributes);
+  if (HeavyControlHandle == NULL) Error_Handler();
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
