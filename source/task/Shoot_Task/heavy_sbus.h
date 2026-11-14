@@ -72,7 +72,7 @@ typedef struct {
 } heavy_sbus_state_t;
 
 /*
- * 在头部首次控制前调用一次（当前由HeavyControl任务调用）。仅UART5空闲才注册。
+ * 在头部首次控制前调用一次（当前由Shoot_Task任务调用）。仅UART5空闲才注册。
  * 用现有 UART5 引脚配置 100000 baud、8 数据位、偶校验、2 停止位；
  * STM32 的 WordLength=9B 包含校验位，线上实际仍是 8 位有效数据。
  * 不配置 GPIO 反相，也不会改 UART7 自定义控制器接口。

@@ -6,6 +6,7 @@
 
 - 本分支实际名为 `gimbal`，代表板二。板一另由其他 Git 分支管理；本次不创建 `board1/`、`board2/`，不合并其他分支的整套目录。
 - 在队友现有机械臂代码上追加重装头部模块；原机械臂六关节、夹爪、自定义控制器、回零逻辑继续保留。
+- 发射与云台相关应用文件统一放在 `source/task/Shoot_Task/`；入口为 `Shoot_Task.c` / `Shoot_Task.h`，FreeRTOS 中注册的线程名和入口均为 `Shoot_Task`。该目录由原 `Heavy_Task/` 整理而来，其余 `heavy_*` 文件名与配置接口保留。
 - 按最新确认，三摩擦轮、DJI yaw、DM4310 pitch 共五个新增电机全部使用 **CAN1**。
 - CAN3 已有机械臂 J1、J2；板间通信与其共线，不挪动队友的电机接线，也不把 CAN3 改成只接收板间 ID 的专用总线。
 - 本板不增加拨弹盘或供弹电机驱动。只通过板间状态帧上报是否允许供弹，板一必须自行实现及时失效的供弹闭锁。
@@ -21,7 +22,7 @@
 | 部分 | 保留内容 |
 | --- | --- |
 | [机械臂任务目录](source/task/Arm_Task/) | 六关节映射、目标角、跟随、回零、状态机、末端执行器逻辑均不重写。 |
-| [FreeRTOS 原任务](Core/Src/freertos.c) | `jointFollowAngle`、`Ctrller_Task`、按原条件注册的 `arm_reset_task`、默认任务和信号量保留；只追加 `HeavyControl`。原本没有运行的 IMU/Remoter 任务仍不擅自开启。 |
+| [FreeRTOS 原任务](Core/Src/freertos.c) | `jointFollowAngle`、`Ctrller_Task`、按原条件注册的 `arm_reset_task`、默认任务和信号量保留；新增头部线程统一命名为 `Shoot_Task`。原本没有运行的 IMU/Remoter 任务仍不擅自开启。 |
 | [启动流程](Core/Src/main.c) | 保留原外设初始化及 `can_sys_init()`，新增任务不会再调用 `can_sys_init()` 清空机械臂消息链表。 |
 | [通用 DM 驱动](source/module/motor/motor_DM/motor_DM.c) | 机械臂现有调用继续使用；新增 pitch 自己封装 POS 帧，避免改变机械臂的共用模式/ID 行为。 |
 | [通用 DJI 驱动](source/module/motor/motor_Dji/motor.DJI.c) | 继续使用现有反馈解析；新增模块自行检查注册结果并统一发送组帧。 |
@@ -37,15 +38,15 @@
 
 | 顺序 | 文件 | 本次职责 |
 | --- | --- | --- |
-| 1 | [heavy_config.h](source/task/Heavy_Task/heavy_config.h) | 硬件总闭锁、三轮数量、CAN ID、弹速范围、轮径/传动比、方向、PID、pitch 零位/限位、反馈编码范围、离线时间。 |
-| 2 | [heavy_task.h](source/task/Heavy_Task/heavy_task.h) | 裁判协议确认开关、SBUS 可选开关、裁判超时、单发热量预留、调试快照定义。 |
-| 3 | [freertos.c](Core/Src/freertos.c) | 追加独立的 `HeavyControl` 静态栈、控制块、属性、句柄及任务注册；原任务保留。 |
-| 4 | [heavy_task.c](source/task/Heavy_Task/heavy_task.c) | 2 ms 主控制循环；处理板间命令、刷新裁判数据、合成各安全门、可选遥控、调用执行器、10 ms 状态回传。 |
-| 5 | [heavy_actuators.h](source/task/Heavy_Task/heavy_actuators.h)、[heavy_actuators.c](source/task/Heavy_Task/heavy_actuators.c) | 追加五电机反馈节点；首帧/离线/过温/故障检测；三摩擦轮速度 PID 和最终目标就绪；yaw 速度环；pitch POS 控制；唯一 DJI 组帧发送者。 |
-| 6 | [heavy_control_math.h](source/task/Heavy_Task/heavy_control_math.h)、[heavy_control_math.c](source/task/Heavy_Task/heavy_control_math.c) | 无硬件依赖的弹速到转子 rpm 换算、斜坡、限幅、最终目标判断，便于独立测试。 |
-| 7 | [heavy_protocol.h](source/task/Heavy_Task/heavy_protocol.h)、[heavy_protocol.c](source/task/Heavy_Task/heavy_protocol.c) | 临时 8 字节协议、CRC-8、序号、超时、重连和 100 包统计窗。 |
-| 8 | [heavy_interboard.h](source/task/Heavy_Task/heavy_interboard.h)、[heavy_interboard.c](source/task/Heavy_Task/heavy_interboard.c) | CAN3 ISR 只把命令逐帧入静态队列；任务中校验/解包；队列溢出闭锁；回传状态。 |
-| 9 | [heavy_sbus.h](source/task/Heavy_Task/heavy_sbus.h)、[heavy_sbus.c](source/task/Heavy_Task/heavy_sbus.c) | 可选 25 字节 SBUS 解析、通道映射、先低后高使能、失控和超时闭锁；默认不接管 UART5。 |
+| 1 | [heavy_config.h](source/task/Shoot_Task/heavy_config.h) | 硬件总闭锁、三轮数量、CAN ID、弹速范围、轮径/传动比、方向、PID、pitch 零位/限位、反馈编码范围、离线时间。 |
+| 2 | [Shoot_Task.h](source/task/Shoot_Task/Shoot_Task.h) | 裁判协议确认开关、SBUS 可选开关、裁判超时、单发热量预留、调试快照定义及线程入口声明。 |
+| 3 | [freertos.c](Core/Src/freertos.c) | 维护独立的 `Shoot_Task` 静态栈、控制块、属性、句柄及任务注册；原任务保留。 |
+| 4 | [Shoot_Task.c](source/task/Shoot_Task/Shoot_Task.c) | `Shoot_Task()` 为 2 ms 主控制循环；处理板间命令、刷新裁判数据、合成各安全门、可选遥控、调用执行器、10 ms 状态回传。 |
+| 5 | [heavy_actuators.h](source/task/Shoot_Task/heavy_actuators.h)、[heavy_actuators.c](source/task/Shoot_Task/heavy_actuators.c) | 追加五电机反馈节点；首帧/离线/过温/故障检测；三摩擦轮速度 PID 和最终目标就绪；yaw 速度环；pitch POS 控制；唯一 DJI 组帧发送者。 |
+| 6 | [heavy_control_math.h](source/task/Shoot_Task/heavy_control_math.h)、[heavy_control_math.c](source/task/Shoot_Task/heavy_control_math.c) | 无硬件依赖的弹速到转子 rpm 换算、斜坡、限幅、最终目标判断，便于独立测试。 |
+| 7 | [heavy_protocol.h](source/task/Shoot_Task/heavy_protocol.h)、[heavy_protocol.c](source/task/Shoot_Task/heavy_protocol.c) | 临时 8 字节协议、CRC-8、序号、超时、重连和 100 包统计窗。 |
+| 8 | [heavy_interboard.h](source/task/Shoot_Task/heavy_interboard.h)、[heavy_interboard.c](source/task/Shoot_Task/heavy_interboard.c) | CAN3 ISR 只把命令逐帧入静态队列；任务中校验/解包；队列溢出闭锁；回传状态。 |
+| 9 | [heavy_sbus.h](source/task/Shoot_Task/heavy_sbus.h)、[heavy_sbus.c](source/task/Shoot_Task/heavy_sbus.c) | 可选 25 字节 SBUS 解析、通道映射、先低后高使能、失控和超时闭锁；默认不接管 UART5。 |
 | 10 | [can_api.c](source/bsp/can/can_api.c) | 保护共享接收链表的插入/删除；避免机械臂和新任务并发注册、ISR 遍历时读到半更新节点；保留旧 API。 |
 | 11 | [can_bsp.c](source/bsp/can/can_bsp.c) | 修正每个 CAN 实例相对滤波索引为 0，标准 ID 范围为 `0x000..0x7FF`；局部接收头、64 字节临时区、经典标准数据帧检查、排空 FIFO；继续更新原消息对象并追加板间接收 hook。 |
 | 12 | [uart_bsp.c](source/bsp/uart/uart_bsp.c) | UART5 增加空指针/长度检查、影子缓存、按固定容量重启接收，避免将本次 Size 当容量再翻倍造成越界；UART7 原逻辑保留。 |
@@ -79,6 +80,8 @@
 机械臂表中基础/运动 ID 按现有关节初始化与调用意图列出；本次不重写其通用 DM 驱动或模式设置，实际帧需由机械臂负责人抓包确认。
 
 `0x200` 是四电机共享的 8 字节电流组帧，不是四个可以各自发送的单电机命令。`heavy_actuators.c` 是 CAN1 上该组帧唯一发送者，按左/右/下/yaw 一次合并四槽。其他任务若再发 `0x200`，即使“只控制其中一个电机”，也会覆盖另外三个槽，禁止这样扩展。
+
+因此本次目录整理和 FreeRTOS 更新仍保留一个 `Shoot_Task` 同时调度摩擦轮与云台，不为 yaw 再创建第二个独立的 `0x200` 发送任务。
 
 DM pitch 的 POS 地址 `0x120` 和反馈 `0x30` 不与 DJI `0x200`、`0x201..0x204` 冲突。不能把 DM 从机 ID 随意改小并切换 SPD 模式：例如从机 `0x03` 的 SPD 地址是 `0x203`，会撞 DJI 反馈。
 
@@ -134,8 +137,8 @@ CRC 初值 `0xFF`，反射多项式 `0x8C`（正向多项式 `0x31`），无最�
 | 宏 | 所在文件 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `HEAVY_HARDWARE_CONFIRMED` | `heavy_config.h` | 0 | 五个新增电机总输出闭锁；为 0 时不发送新增使能、失能、DJI 电流或 pitch 位置帧。 |
-| `HEAVY_REFEREE_PROTOCOL_CONFIRMED` | `heavy_task.h` | 0 | 裁判字段/临时弹量来源未确认时不转摩擦轮、不报告允许供弹；允许先观察接收状态。 |
-| `HEAVY_USE_SBUS` | `heavy_task.h` | 0 | 默认沿用板间命令，不初始化新增 UART5 SBUS 接收者；启用后叠加本地遥控许可。 |
+| `HEAVY_REFEREE_PROTOCOL_CONFIRMED` | `Shoot_Task.h` | 0 | 裁判字段/临时弹量来源未确认时不转摩擦轮、不报告允许供弹；允许先观察接收状态。 |
+| `HEAVY_USE_SBUS` | `Shoot_Task.h` | 0 | 默认沿用板间命令，不初始化新增 UART5 SBUS 接收者；启用后叠加本地遥控许可。 |
 
 原机械臂 `DEBUG_READ_DATA_ONLY` 为真时，也强制清除新增摩擦轮/云台动作请求，保持队友的只读调试模式语义。
 
@@ -202,7 +205,7 @@ UART5 如已有接收者，SBUS 初始化拒绝覆盖。UART7 仍由队友自定
 | P2 | yaw IMU稳定、绝对角控制、自瞄 | 云台负责人 | 当前只是速度闭环，后续应在统一命令入口扩展，不能另起任务重复发同组电流。 |
 | P2 | 装配等级感知和赛事状态机 | 规则/整机策略负责人 | 当前无可信判定来源，本次不猜测实现。 |
 
-源码中的风险提示集中在 `heavy_config.h` 的硬件参数注释、`heavy_task.h` 的协议确认宏、`heavy_actuators.c` 的首帧和特殊模式帧注释、`heavy_sbus.h` 的引脚/反相说明、`heavy_protocol.h` 的“临时协议”声明。即使没有字面 `TODO`，这些待确认项也不代表已完成实车验证。
+源码中的风险提示集中在 `heavy_config.h` 的硬件参数注释、`Shoot_Task.h` 的协议确认宏、`heavy_actuators.c` 的首帧和特殊模式帧注释、`heavy_sbus.h` 的引脚/反相说明、`heavy_protocol.h` 的“临时协议”声明。即使没有字面 `TODO`，这些待确认项也不代表已完成实车验证。
 
 ## 10. 构建与验证记录
 
@@ -218,13 +221,13 @@ cmake --build --preset Debug
 
 输出位于 `build/Debug/`，目标名仍为原工程的 `RMtextH7.elf`。切换电脑或编译器路径后应重新配置本机缓存，不提交 `build/`、ELF、CMake缓存或个人工具链路径。
 
-最终源码的验证记录（2026-11-14）：
+`Shoot_Task` 目录和FreeRTOS入口调整后的复验记录（2026-11-14）：
 
 | 检查 | 结果 | 范围 |
 | --- | --- | --- |
 | 新增执行器/数学模块 ARM GCC 语法检查 | 通过，无新警告 | 使用现有工程编译参数，未替换工具链。 |
-| Debug 整工程编译链接及最终复编 | 通过 | Flash 89,256 B（8.51%）；DTCM 45,368 B（34.61%）。 |
-| 独立 FeatureCheck 全功能构建及最终复编 | 通过 | 同时开启 `HEAVY_USE_SBUS=1`、`HEAVY_HARDWARE_CONFIRMED=1`、`HEAVY_REFEREE_PROTOCOL_CONFIRMED=1`；Flash 93,544 B（8.92%）；只编译检查，未连接或驱动硬件。 |
+| Debug 整工程编译链接及最终复编 | 通过 | Flash 89,252 B（8.51%）；DTCM 45,368 B（34.61%）。 |
+| 独立 FeatureCheck 全功能构建及最终复编 | 通过 | 同时开启 `HEAVY_USE_SBUS=1`、`HEAVY_HARDWARE_CONFIRMED=1`、`HEAVY_REFEREE_PROTOCOL_CONFIRMED=1`；Flash 93,540 B（8.92%）；只编译检查，未连接或驱动硬件。 |
 | 协议/数学桌面回归 | 通过，8组1062断言 | 真实编译生产C代码；覆盖CRC黄金值、窗口、5%丢包、重连、重复、回绕、量纲、NaN/Inf、斜坡与最终目标。 |
 | 执行器桌面行为回归 | 通过，19用例 | 实际链接生产执行器、PID和电机驱动；逐台首帧/超时/过温、最终速度稳定、DM错误/保留状态、pitch越界、发送失败锁存、禁用和注册失败回滚。 |
 

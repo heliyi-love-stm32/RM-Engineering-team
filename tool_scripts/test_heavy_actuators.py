@@ -41,7 +41,7 @@ def main() -> int:
     parser.add_argument("--vcvars", help="Existing vcvars64.bat for Windows MSVC")
     options = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    module = root / "source/task/Heavy_Task"
+    module = root / "source/task/Shoot_Task"
     compiler = options.cc or shutil.which("gcc") or shutil.which("clang")
     environment = None
     if not compiler or Path(compiler).name.lower() in ("cl", "cl.exe"):

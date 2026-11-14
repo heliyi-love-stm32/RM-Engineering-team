@@ -33,7 +33,7 @@
 // #include "usart.h"
 // #include "PIDtool.h"
 #include "arm_debug.h"
-#include "heavy_task.h"
+#include "Shoot_Task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,16 +68,18 @@ typedef StaticSemaphore_t osStaticSemaphoreDef_t;
  * Buffer、ControlBlock 和 attributes 三部分定义。
  */
 /* USER CODE BEGIN Variables */
-/* 新增头部任务，独立静态栈/控制块；原机械臂、夹爪、控制器、回零任务原样保留。 */
-static uint32_t HeavyControlBuffer[1024];
-static osStaticThreadDef_t HeavyControlControlBlock;
-static osThreadId_t HeavyControlHandle;
-static const osThreadAttr_t HeavyControl_attributes = {
-  .name = "HeavyControl",
-  .cb_mem = &HeavyControlControlBlock,
-  .cb_size = sizeof(HeavyControlControlBlock),
-  .stack_mem = HeavyControlBuffer,
-  .stack_size = sizeof(HeavyControlBuffer),
+/* 发射/云台任务位于source/task/Shoot_Task/，统一协调CAN1输出。
+ * 静态栈1024个uint32_t=4096字节；栈、控制块、属性应一起维护。
+ * 保持原2ms控制周期和Normal优先级，机械臂等任务注册沿用原配置。 */
+static uint32_t Shoot_TaskBuffer[1024];
+static osStaticThreadDef_t Shoot_TaskControlBlock;
+static osThreadId_t Shoot_TaskHandle;
+static const osThreadAttr_t Shoot_Task_attributes = {
+  .name = "Shoot_Task",
+  .cb_mem = &Shoot_TaskControlBlock,
+  .cb_size = sizeof(Shoot_TaskControlBlock),
+  .stack_mem = Shoot_TaskBuffer,
+  .stack_size = sizeof(Shoot_TaskBuffer),
   .priority = (osPriority_t)osPriorityNormal,
 };
 /* USER CODE END Variables */
@@ -251,7 +253,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /*
-   * 当前启用的机械臂任务与所需基础服务。
+   * 当前启用的机械臂、发射/云台任务与所需基础服务。
    */
   /* creation of defaultTask */
   /* 空闲占位任务；必须主动让出 CPU，保证控制任务正常运行。 */
@@ -275,8 +277,10 @@ void MX_FREERTOS_Init(void) {
 #endif
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  HeavyControlHandle = osThreadNew(HeavyControl_Task, NULL, &HeavyControl_attributes);
-  if (HeavyControlHandle == NULL) Error_Handler();
+  /* 只创建一次：任务内部初始化新增电机、板间通信及裁判接收，然后周期控制。
+   * 不再额外创建独立yaw/摩擦轮发送任务，避免相互覆盖同一个DJI组帧。 */
+  Shoot_TaskHandle = osThreadNew(Shoot_Task, NULL, &Shoot_Task_attributes);
+  if (Shoot_TaskHandle == NULL) Error_Handler();
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 

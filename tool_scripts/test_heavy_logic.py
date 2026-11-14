@@ -97,7 +97,7 @@ def main() -> int:
     parser.add_argument("--vcvars", help="Path to an existing vcvars64.bat for Windows MSVC.")
     options = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    module = root / "source/task/Heavy_Task"
+    module = root / "source/task/Shoot_Task"
     sources = [root / "tool_scripts/heavy_logic_harness.c", module / "heavy_protocol.c",
                module / "heavy_control_math.c"]
 

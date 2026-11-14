@@ -1,4 +1,4 @@
-#include "heavy_task.h"
+#include "Shoot_Task.h"
 #include "heavy_config.h"
 #include "heavy_interboard.h"
 #include "heavy_sbus.h"
@@ -10,7 +10,8 @@
 
 volatile heavy_task_debug_t g_heavy_debug;
 
-void HeavyControl_Task(void *argument)
+/* 发射/云台统一控制入口：两个机构共享CAN1的0x200组帧，不可重复创建发送任务。 */
+void Shoot_Task(void *argument)
 {
     (void)argument;
     /* 只追加自己的资源。can_sys_init已在main中执行，绝不能再次清空机械臂链表。 */

@@ -1,5 +1,5 @@
-#ifndef HEAVY_TASK_H
-#define HEAVY_TASK_H
+#ifndef SHOOT_TASK_H
+#define SHOOT_TASK_H
 #include <stdint.h>
 #include "heavy_actuators.h"
 
@@ -28,7 +28,8 @@ extern volatile heavy_task_debug_t g_heavy_debug;
 #ifdef __cplusplus
 extern "C" {
 #endif
-void HeavyControl_Task(void *argument);
+/* 在freertos.c注册一次，周期2ms；同时协调发射机构和共享组帧的云台。 */
+void Shoot_Task(void *argument);
 #ifdef __cplusplus
 }
 #endif
